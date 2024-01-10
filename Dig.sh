@@ -1,8 +1,14 @@
 #!/bin/bash
 
-scriptVersion="0.1.5"
+scriptVersion="0.1.6"
 
 askTunnelingMethod() {
+	# We check wether the tunneling method is supplied at execution or not
+	# If so we will skip this step
+	if [ -v tunnelingMethod ]; then
+		return 0
+	fi
+
 	# We ask the user to select the desired tunneling method
 	# We limit the input character count to 1 by using (-n) argument
 	echo "========================================================================="
@@ -23,6 +29,12 @@ askTunnelingMethod() {
 }
 
 installPackages() {
+	# We check wether user requested to disable package updating or not
+	# If so we will skip this step
+	if [ -v disablePackageUpdating ]; then
+		return 0
+	fi
+
 	echo "========================================================================="
 	echo "|       Updating repositories and installing the required packages      |"
 	echo "|              (This may take a few minutes, Please wait...)            |"
@@ -45,27 +57,13 @@ showStartupMessage() {
 	echo "=========================="
 }
 
-installHysteria() {
-	echo
-	echo "installing Hysteria 2"
-
-	# We check and save the latest version number of Sing-Box
-	latestsingboxversion="$(curl --silent "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
-
-	optimizeServerSettings
-
-	addNewUser
-}
-
-installReality() {
-	echo "installing Reality (XTLS VLESS)"
-}
-
-installShadowSocks() {
-	echo "installing ShadowSocks"
-}
-
 optimizeServerSettings() {
+	# We check wether user has disabled server settings optimization or not
+	# If so we will skip this step
+	if [ -v disableServerOptimization ]; then
+		return 0
+	fi
+
 	echo "========================================================================="
 	echo "|                       Optimizing server settings                      |"
 	echo "========================================================================="
@@ -144,6 +142,52 @@ addNewUser() {
 	sudo chown -R $username /temphysteria2folder/
 }
 
+createHysteriaService() {
+	echo "========================================================================="
+	echo "|                      Creating Hysteria 2 service                      |"
+	echo "========================================================================="
+	# We create a service file
+	sudo echo "[Unit]" > /etc/systemd/system/hysteria2.service
+	sudo echo "Description=sing-box service" >> /etc/systemd/system/hysteria2.service
+	sudo echo "Documentation=https://sing-box.sagernet.org" >> /etc/systemd/system/hysteria2.service
+	sudo echo "After=network.target nss-lookup.target" >> /etc/systemd/system/hysteria2.service
+	sudo echo "[Service]" >> /etc/systemd/system/hysteria2.service
+	sudo echo "User=$username" >> /etc/systemd/system/hysteria2.service
+	sudo echo "Group=$username" >> /etc/systemd/system/hysteria2.service
+	sudo echo "CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH" >> /etc/systemd/system/hysteria2.service
+	sudo echo "AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH" >> /etc/systemd/system/hysteria2.service
+	sudo echo "ExecStart=/home/$username/hysteria2/sing-box -D /home/$username/hysteria2/ run -c /home/$username/hysteria2/config.json" >> /etc/systemd/system/hysteria2.service
+	sudo echo "ExecReload=/bin/kill -HUP \$MAINPID" >> /etc/systemd/system/hysteria2.service
+	sudo echo "Restart=on-failure" >> /etc/systemd/system/hysteria2.service
+	sudo echo "RestartSec=10s" >> /etc/systemd/system/hysteria2.service
+	sudo echo "LimitNOFILE=infinity" >> /etc/systemd/system/hysteria2.service
+	sudo echo "" >> /etc/systemd/system/hysteria2.service
+	sudo echo "[Install]" >> /etc/systemd/system/hysteria2.service
+	sudo echo "WantedBy=multi-user.target" >> /etc/systemd/system/hysteria2.service
+}
+
+installHysteria() {
+	echo
+	echo "installing Hysteria 2"
+
+	# We check and save the latest version number of Sing-Box
+	latestsingboxversion="$(curl --silent "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
+
+	optimizeServerSettings
+
+	addNewUser
+
+	createHysteriaService
+}
+
+installReality() {
+	echo "installing Reality (XTLS VLESS)"
+}
+
+installShadowSocks() {
+	echo "installing ShadowSocks"
+}
+
 # We get provided arguments
 i=1;
 totalArguments=$#
@@ -168,26 +212,22 @@ do
 			tunnelingMethod=3	
 	fi
 
-	# We check update pakcages argument
+	# We check package update flag
 	if [ $1 = "-dpu" ]; then
 		disablePackageUpdating=1
 	fi
 
+	# We check server optimization flag
+	if [ $1 = "-dso" ]; then
+		disableServerOptimization=1
+	fi
 done
 
 showStartupMessage
 
-# We check wether the method is supplied at execution or not
-# if not, we ask the user by calling the askTunnelingMethod function
-if [ ! -v tunnelingMethod ]; then
-	askTunnelingMethod
-fi
+askTunnelingMethod
 
-# We check wether user requested to disable package updating or not
-# If so we will skip this step
-if [ ! -v disablePackageUpdating ]; then
-	installPackages
-fi
+installPackages
 
 # We call the function to set up the specified tunneling method
 case $tunnelingMethod in
