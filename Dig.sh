@@ -1,16 +1,19 @@
 #!/bin/bash
 
 askTunnelingMethod() {
-	# TODO: we must be able to get this option from calling and dont ask for this if it's already provided
-# We ask the user to select the desired tunneling method
-# We limit the input character count to 1 by using (-n) argument
-# TODO: we must somehow validate the input
-echo "1 - Hysteria 2
-2 - Reality (XTLS VLESS)
-3 - Shadowsocks (Obsolete)"
-read -n 1 -p "Select tunneling method: " tunnelingMethod
-}
+	# We ask the user to select the desired tunneling method
+	# We limit the input character count to 1 by using (-n) argument
+	echo "1 - Hysteria 2
+	2 - Reality (XTLS VLESS)
+	3 - Shadowsocks (Obsolete)"
+	read -n 1 -p "Select tunneling method: " tunnelingMethod
 
+	# We validate user input
+	until [[ $tunnelingMethod == +([1-3]) ]]; do
+		echo
+		read -n 1 -p "Wrong input, please only input a number from 1 - 3: " tunnelingMethod
+	done
+}
 
 # We get provided arguments
 i=1;
@@ -20,24 +23,24 @@ totalArguments=$#
 while [ $i -le $totalArguments ]
 do 
 	i=$((i + 1));
+	# We check for tunneling method argument
 	if  [ $1 = "-tm" ]; then
 		shift
+		# Hysteria 2
 		if [ $1 == "h2" ]; then
 			tunnelingMethod=1
 		fi
+		# Reality
 		if [ $1 == "xr" ]; then
 			tunnelingMethod=2
 		fi
+		# Shadowsocks
 		elif [ $1 == "ss" ]; then
 			tunnelingMethod=3
 		fi
 done
 
-
-# We clear the console
-clear
-
-scriptVersion="0.1.0"
+scriptVersion="0.1.1"
 
 echo "=========================================================================
 |                    TunlDigr by @MohsenHNSJ (Github)                   |
@@ -50,13 +53,9 @@ Check out the github page, contribute and suggest ideas/bugs/improvments.
 
 # We check wether the method is supplied at execution or not
 # if not, we ask the user by calling the askTunnelingMethod function
-
 if [ ! -v tunnelingMethod ]; then
 	askTunnelingMethod
 fi
-
-echo $tunnelingMethod
-
 
 echo "=========================================================================
 |       Updating repositories and installing the required packages      |
