@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.1.6"
+scriptVersion="0.1.7"
 
 askTunnelingMethod() {
 	# We check wether the tunneling method is supplied at execution or not
@@ -166,6 +166,88 @@ createHysteriaService() {
 	sudo echo "WantedBy=multi-user.target" >> /etc/systemd/system/hysteria2.service
 }
 
+switchUser() {
+	echo "========================================================================="
+	echo "|                           Switching user                              |"
+	echo "========================================================================="
+	# We now switch to the new user
+	sshpass -p $password ssh -o "StrictHostKeyChecking=no" $username@127.0.0.1
+
+	# We read the saved credentials
+	tempusername=$(</temphysteria2folder/tempusername.txt)
+	temppassword=$(</temphysteria2folder/temppassword.txt)
+	templatestsingboxversion=$(</temphysteria2folder/templatestsingboxversion.txt)
+
+	# We delete senstive inforamtion
+	rm /temphysteria2folder/tempusername.txt
+	rm /temphysteria2folder/temppassword.txt
+	rm /temphysteria2folder/templatestsingboxversion.txt
+
+	# We provide password to 'sudo' command and open port 443
+	echo $temppassword | sudo -S ufw allow 443
+}
+
+downloadSingBox() {
+	echo "========================================================================="
+	echo "|               Downloading Sing-Box and required files                 |"
+	echo "========================================================================="
+	then
+	    rm -r /temphysteria2folder
+		sudo mkdir /temphysteria2folder
+	else
+		sudo mkdir /temphysteria2folder
+	fi
+
+	# We create directory to hold Hysteria files
+	# If it does exist, we must delete it and make a new one to avoid conflicts
+	if [ -d "/hysteria2" ]; then
+		rm -r /hysteria2
+	fi
+	mkdir hysteria2
+
+	# We navigate to directory we created
+	cd hysteria2/
+
+	# We check and save the hardware architecture of current machine
+	hwarch="$(uname -m)"
+
+	case $hwarch in 
+	x86_64)
+	# We check if cpu supprt AVX
+	avxsupport="$(lscpu | grep -o avx)"
+
+	if [ -z "$avxsupport" ];
+	then 
+		echo "AVX is NOT supported"
+		hwarch="amd64"
+	else
+		echo "AVX is Supported"
+		hwarch="amd64v3"
+	fi
+	;;
+	aarch64)
+	hwarch="arm64" ;;
+	armv7l)
+	hwarch="armv7" ;;
+	*)
+	echo "This architecture is NOT Supported by this script. exiting ..."
+	exit ;;
+	esac
+
+	# We download the latest suitable package for current machine
+	wget https://github.com/SagerNet/sing-box/releases/download/v$latestsingboxversion/sing-box-$latestsingboxversion-linux-$hwarch.tar.gz
+
+	# We extract the package
+	tar -xzf sing-box-$latestsingboxversion-linux-$hwarch.tar.gz --strip-components=1 sing-box-$latestsingboxversion-linux-$hwarch/sing-box
+
+	# We remove downloaded file
+	rm sing-box-$latestsingboxversion-linux-$hwarch.tar.gz
+
+	# We create certificate keys
+	openssl ecparam -genkey -name prime256v1 -out ca.key
+	openssl req -new -x509 -days 36500 -key ca.key -out ca.crt -subj "/CN=google-analytics.com"
+}
+
 installHysteria() {
 	echo
 	echo "installing Hysteria 2"
@@ -178,6 +260,10 @@ installHysteria() {
 	addNewUser
 
 	createHysteriaService
+
+	switchUser
+
+	downloadSingBox
 }
 
 installReality() {
@@ -188,39 +274,35 @@ installShadowSocks() {
 	echo "installing ShadowSocks"
 }
 
-# We get provided arguments
-i=1;
-totalArguments=$#
-
-# We iterate all arguments
-while [ $i -le $totalArguments ]
-do 
-	i=$((i + 1));
-	# We check for tunneling method argument
-	if  [ $1 = "-tm" ]; then
-		shift
-		# Hysteria 2
-		if [ $1 == "h2" ]; then
-			tunnelingMethod=1
-		fi
-		# Reality
-		if [ $1 == "xr" ]; then
-			tunnelingMethod=2
-		fi
-		# Shadowsocks
-		elif [ $1 == "ss" ]; then
-			tunnelingMethod=3	
-	fi
-
-	# We check package update flag
-	if [ $1 = "-dpu" ]; then
-		disablePackageUpdating=1
-	fi
-
-	# We check server optimization flag
-	if [ $1 = "-dso" ]; then
-		disableServerOptimization=1
-	fi
+# We iterate through all provided arguments
+while [ ! -z "$1" ]; do
+	case "$1" in
+		# Tunneling method
+		-tm)
+			shift
+			# Hysteria 2
+			if [ $1 == "h2" ]; then
+				tunnelingMethod=1
+			fi
+			# Reality
+			if [ $1 == "xr" ]; then
+				tunnelingMethod=2
+			fi
+			# Shadowsocks
+			if [ $1 == "ss" ]; then
+				tunnelingMethod=3	
+			fi
+			;;
+		# Disable package updating
+		-dpu)
+			disablePackageUpdating=1
+			;;
+		# Disable server settings optimization
+		-dso)
+			disableServerOptimization=1
+			;;
+	esac
+shift
 done
 
 showStartupMessage
