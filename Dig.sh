@@ -1,10 +1,14 @@
 #!/bin/bash
 
-scriptVersion="0.1.4"
+scriptVersion="0.1.5"
 
 askTunnelingMethod() {
 	# We ask the user to select the desired tunneling method
 	# We limit the input character count to 1 by using (-n) argument
+	echo "========================================================================="
+	echo "|             Select the desired tunneling method to set up             |"
+	echo "|                   Enter only numbers between 1 - 3                    |"
+	echo "========================================================================="
 	echo "1 - Hysteria 2"
 	echo "2 - Reality (XTLS VLESS)"
 	echo "3 - Shadowsocks (Obsolete)"
@@ -47,6 +51,10 @@ installHysteria() {
 
 	# We check and save the latest version number of Sing-Box
 	latestsingboxversion="$(curl --silent "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
+
+	optimizeServerSettings
+
+	addNewUser
 }
 
 installReality() {
@@ -83,6 +91,59 @@ optimizeServerSettings() {
 	sudo sysctl -p
 }
 
+addNewUser() {
+	echo "========================================================================="
+	echo "|                  Adding a new user and configuring                    |"
+	echo "========================================================================="
+	# We generate a random name for the new user
+	choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
+	username="$({ choose 'abcdefghijklmnopqrstuvwxyz'
+	  for i in $( seq 1 $(( 6 + RANDOM % 4 )) )
+	     do
+	        choose 'abcdefghijklmnopqrstuvwxyz'
+	     done
+	 } | sort -R | awk '{printf "%s",$1}')"
+
+	# We generate a random password for the new user
+	# We avoid adding symbols inside the password as it sometimes caused problems, therefore the password lenght is high
+	choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
+	password="$({ choose '123456789'
+	  choose 'abcdefghijklmnopqrstuvwxyz'
+	  choose 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+	  for i in $( seq 1 $(( 18 + RANDOM % 4 )) )
+	     do
+	        choose '123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+	     done
+	 } | sort -R | awk '{printf "%s",$1}')"
+
+	 # We create a new user
+	adduser --gecos "" --disabled-password $username
+
+	# We set a password for the new user
+	chpasswd <<<"$username:$password"
+
+	# We grant root privileges to the new user
+	usermod -aG sudo $username
+
+	# We save the new user credentials to use after switching user
+	# We first must check if it already exists or not
+	# If it does exist, we must delete it and make a new one to store new temporary data
+	if [ -d "/temphysteria2folder" ]
+	then
+	    rm -r /temphysteria2folder
+		sudo mkdir /temphysteria2folder
+	else
+		sudo mkdir /temphysteria2folder
+	fi
+
+	echo $username > /temphysteria2folder/tempusername.txt
+	echo $password > /temphysteria2folder/temppassword.txt
+	echo $latestsingboxversion > /temphysteria2folder/templatestsingboxversion.txt
+
+	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed
+	sudo chown -R $username /temphysteria2folder/
+}
+
 # We get provided arguments
 i=1;
 totalArguments=$#
@@ -105,10 +166,13 @@ do
 		# Shadowsocks
 		elif [ $1 == "ss" ]; then
 			tunnelingMethod=3	
-		# Invalid input
-		else 
-			echo "Invalid input for argument -tm. ignoring"	
-		fi
+	fi
+
+	# We check update pakcages argument
+	if [ $1 = "-dpu" ]; then
+		disablePackageUpdating=1
+	fi
+
 done
 
 showStartupMessage
@@ -119,8 +183,13 @@ if [ ! -v tunnelingMethod ]; then
 	askTunnelingMethod
 fi
 
-installPackages
+# We check wether user requested to disable package updating or not
+# If so we will skip this step
+if [ ! -v disablePackageUpdating ]; then
+	installPackages
+fi
 
+# We call the function to set up the specified tunneling method
 case $tunnelingMethod in
 	1)
 	installHysteria
