@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.2.5"
+scriptVersion="0.2.6"
 
 generateRandom() {
     case "$1" in
@@ -2394,6 +2394,16 @@ showConnectionInformation() {
     echo "Usage of country-based routing is highly advised!"
 }
 
+showQrCode() {
+    echo "========================================================================="
+    echo "|                               QRCODE                                  |"
+    echo "========================================================================="
+    serverConfig="hy2://$h2UserPass@$serverIp:$tunnelPort/?insecure=1&obfs=salamander&obfs-password=$h2ObfsPass#$serverName"
+
+    # We output a qrcode to ease connection
+    qrencode -t ansiutf8 $serverConfig
+}
+
 installHysteria() {
 	echo "========================================================================="
 	echo "|                        Installing Hysteria 2                          |"
@@ -2422,6 +2432,10 @@ installHysteria() {
 
     if [ ! -v disableConnectionInformation ]; then
         showConnectionInformation
+    fi
+
+    if [ ! -v disableQrCode ]; then
+        showQrCode
     fi
 }
 
@@ -2457,16 +2471,20 @@ while [ ! -z "$1" ]; do
 			fi
 			;;
 		# Disable package updating (not recommended)
-		-dpu)
+		-dpakup)
 			disablePackageUpdating=1
 			;;
 		# Disable server settings optimization (not recommended)
-		-dso)
+		-dservopti)
 			disableServerOptimization=1
 			;;
         # Disable showing connection information after finishing installation
-        -dci)
+        -dconinfo)
             disableConnectionInformation=1
+            ;;
+        # Disable showing QR code after finishing installation
+        -dqrcode)
+            disableQrCode=1
             ;;
 		# Set custom username for new account (default: random)
 		-setusername)
