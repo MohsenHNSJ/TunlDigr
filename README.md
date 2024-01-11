@@ -43,7 +43,11 @@ useful if you already have the following packages installed:
 
 ### `-dso` (disable server optimization):
 by adding this flag, the script will *NOT* optimize the `sysctl.conf` and `limits.conf` file.  
-_not recommended_  
+_not recommended_   
+
+### `-dci` (disable connection information):  
+by adding this flag, the script will *NOT* show the connection information at the end of setup.  
+useful in case you have customized everything.
 
 ### `-setusername` (set custom username):
 the script generates a random username each time, you can override this behaviour and provide your custom username to be used when creating a new user.  
