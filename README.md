@@ -23,9 +23,13 @@ the script generates a random password each time, you can override this behaviou
 ---
 
 ## Hysteria Arguments
-### `-setsslcn` (set custom SSL certificate common name) (CN):  
+### `-seth2sslcn` (set custom SSL certificate common name) (CN):  
 you can set custom common name for SSL certificate  
 default: `google-analytics.com`  
+
+### `-seth2obfspass` (set custom hysteria obfs password):
+you can set custom password for hysteria obfs (salamander)  
+default is random
 
 ---
 
