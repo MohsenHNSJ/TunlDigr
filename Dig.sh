@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.1.7"
+scriptVersion="0.1.8"
 
 askTunnelingMethod() {
 	# We check wether the tunneling method is supplied at execution or not
@@ -93,7 +93,9 @@ addNewUser() {
 	echo "========================================================================="
 	echo "|                  Adding a new user and configuring                    |"
 	echo "========================================================================="
-	# We generate a random name for the new user
+	# We check wether user has provided custom username
+	# If not, we will generate a random username
+	if [ ! -v username ]; then
 	choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
 	username="$({ choose 'abcdefghijklmnopqrstuvwxyz'
 	  for i in $( seq 1 $(( 6 + RANDOM % 4 )) )
@@ -101,6 +103,7 @@ addNewUser() {
 	        choose 'abcdefghijklmnopqrstuvwxyz'
 	     done
 	 } | sort -R | awk '{printf "%s",$1}')"
+	fi
 
 	# We generate a random password for the new user
 	# We avoid adding symbols inside the password as it sometimes caused problems, therefore the password lenght is high
@@ -300,6 +303,10 @@ while [ ! -z "$1" ]; do
 		# Disable server settings optimization
 		-dso)
 			disableServerOptimization=1
+			;;
+		# Set custom username for new account
+		-setusername)
+			username=$2
 			;;
 	esac
 shift
