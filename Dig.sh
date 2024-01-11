@@ -1,6 +1,34 @@
 #!/bin/bash
 
-scriptVersion="0.2.0"
+scriptVersion="0.2.1"
+
+generateRandom() {
+    case "$1" in
+	username)
+            choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
+	            local randomUsername="$({ choose 'abcdefghijklmnopqrstuvwxyz'
+	            for i in $( seq 1 $(( 6 + RANDOM % 4 )) )
+	            do
+	            choose 'abcdefghijklmnopqrstuvwxyz'
+	            done
+	            } | sort -R | awk '{printf "%s",$1}')"
+            echo $randomUsername
+			;;
+        password)
+        	# We avoid adding symbols inside the password as it sometimes caused problems, therefore the password lenght is high
+        	choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
+		        local randomPassword="$({ choose '123456789'
+		        choose 'abcdefghijklmnopqrstuvwxyz'
+		        choose 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+		        for i in $( seq 1 $(( 18 + RANDOM % 4 )) )
+			    do
+				choose '123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+			    done
+		        } | sort -R | awk '{printf "%s",$1}')"
+            echo $randomPassword
+            ;;
+	esac
+}
 
 askTunnelingMethod() {
 	# We check wether the tunneling method is supplied at execution or not
@@ -95,39 +123,24 @@ addNewUser() {
 	echo "========================================================================="
 	# We check wether user has provided custom username
 	# If not, we will generate a random username
-	if [ ! -v username ]; then
-	choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
-	username="$({ choose 'abcdefghijklmnopqrstuvwxyz'
-	  for i in $( seq 1 $(( 6 + RANDOM % 4 )) )
-	     do
-	        choose 'abcdefghijklmnopqrstuvwxyz'
-	     done
-	 } | sort -R | awk '{printf "%s",$1}')"
+	if [ ! -v newAccUsername ]; then
+        newAccUsername=$(generateRandom username)
 	fi
 
 	# We check wether user has provided custom password
 	# If not, we will generate a random password
-	if [ ! -v password ]; then
-		# We avoid adding symbols inside the password as it sometimes caused problems, therefore the password lenght is high
-		choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
-		password="$({ choose '123456789'
-		choose 'abcdefghijklmnopqrstuvwxyz'
-		choose 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-		for i in $( seq 1 $(( 18 + RANDOM % 4 )) )
-			do
-				choose '123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-			done
-		} | sort -R | awk '{printf "%s",$1}')"
+	if [ ! -v newAccPassword ]; then
+		newAccPassword=$(generateRandom password)
 	fi
 
 	 # We create a new user
-	adduser --gecos "" --disabled-password $username
+	adduser --gecos "" --disabled-password $newAccUsername
 
 	# We set a password for the new user
-	chpasswd <<<"$username:$password"
+	chpasswd <<<"$newAccUsername:$newAccPassword"
 
 	# We grant root privileges to the new user
-	usermod -aG sudo $username
+	usermod -aG sudo $newAccUsername
 
 	# We save the new user credentials to use after switching user
 	# We first must check if it already exists or not
@@ -140,12 +153,12 @@ addNewUser() {
 		sudo mkdir /temphysteria2folder
 	fi
 
-	echo $username > /temphysteria2folder/tempusername.txt
-	echo $password > /temphysteria2folder/temppassword.txt
+	echo $newAccUsername > /temphysteria2folder/tempNewAccUsername.txt
+	echo $newAccPassword > /temphysteria2folder/tempNewAccPassword.txt
 	echo $latestsingboxversion > /temphysteria2folder/templatestsingboxversion.txt
 
 	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed
-	sudo chown -R $username /temphysteria2folder/
+	sudo chown -R $newAccUsername /temphysteria2folder/
 }
 
 createHysteriaService() {
@@ -158,11 +171,11 @@ createHysteriaService() {
 	sudo echo "Documentation=https://sing-box.sagernet.org" >> /etc/systemd/system/hysteria2.service
 	sudo echo "After=network.target nss-lookup.target" >> /etc/systemd/system/hysteria2.service
 	sudo echo "[Service]" >> /etc/systemd/system/hysteria2.service
-	sudo echo "User=$username" >> /etc/systemd/system/hysteria2.service
-	sudo echo "Group=$username" >> /etc/systemd/system/hysteria2.service
+	sudo echo "User=$newAccUsername" >> /etc/systemd/system/hysteria2.service
+	sudo echo "Group=$newAccUsername" >> /etc/systemd/system/hysteria2.service
 	sudo echo "CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH" >> /etc/systemd/system/hysteria2.service
 	sudo echo "AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH" >> /etc/systemd/system/hysteria2.service
-	sudo echo "ExecStart=/home/$username/hysteria2/sing-box -D /home/$username/hysteria2/ run -c /home/$username/hysteria2/config.json" >> /etc/systemd/system/hysteria2.service
+	sudo echo "ExecStart=/home/$newAccUsername/hysteria2/sing-box -D /home/$newAccUsername/hysteria2/ run -c /home/$newAccUsername/hysteria2/config.json" >> /etc/systemd/system/hysteria2.service
 	sudo echo "ExecReload=/bin/kill -HUP \$MAINPID" >> /etc/systemd/system/hysteria2.service
 	sudo echo "Restart=on-failure" >> /etc/systemd/system/hysteria2.service
 	sudo echo "RestartSec=10s" >> /etc/systemd/system/hysteria2.service
@@ -177,20 +190,20 @@ switchUser() {
 	echo "|                           Switching user                              |"
 	echo "========================================================================="
 	# We now switch to the new user
-	sshpass -p $password ssh -o "StrictHostKeyChecking=no" $username@127.0.0.1
+	sshpass -p $newAccPassword ssh -o "StrictHostKeyChecking=no" $newAccUsername@127.0.0.1
 
 	# We read the saved credentials
-	tempusername=$(</temphysteria2folder/tempusername.txt)
-	temppassword=$(</temphysteria2folder/temppassword.txt)
+	tempNewAccUsername=$(</temphysteria2folder/tempNewAccUsername.txt)
+	tempNewAccPassword=$(</temphysteria2folder/tempNewAccPassword.txt)
 	templatestsingboxversion=$(</temphysteria2folder/templatestsingboxversion.txt)
 
 	# We delete senstive inforamtion
-	rm /temphysteria2folder/tempusername.txt
-	rm /temphysteria2folder/temppassword.txt
+	rm /temphysteria2folder/tempNewAccUsername.txt
+	rm /temphysteria2folder/tempNewAccPassword.txt
 	rm /temphysteria2folder/templatestsingboxversion.txt
 
 	# We provide password to 'sudo' command and open port 443
-	echo $temppassword | sudo -S ufw allow 443
+	echo $tempNewAccPassword | sudo -S ufw allow 443
 }
 
 downloadSingBox() {
@@ -294,7 +307,7 @@ hysteriapassword="$({ choose '123456789'
  } | sort -R | awk '{printf "%s",$1}')"
 
 # We store path of 'config.json' file
-configfile=/home/$tempusername/hysteria2/config.json
+configfile=/home/$tempNewAccUsername/hysteria2/config.json
 
 # We create 'config.json' file
 cat > $configfile << EOL
@@ -325,8 +338,8 @@ cat > $configfile << EOL
          "ignore_client_bandwidth":true,
          "tls":{
             "enabled":true,
-            "certificate_path":"/home/$tempusername/hysteria2/ca.crt",
-            "key_path":"/home/$tempusername/hysteria2/ca.key"
+            "certificate_path":"/home/$tempNewAccUsername/hysteria2/ca.crt",
+            "key_path":"/home/$tempNewAccUsername/hysteria2/ca.key"
          }
       }
    ],
@@ -2428,11 +2441,11 @@ while [ ! -z "$1" ]; do
 			;;
 		# Set custom username for new account (default: random)
 		-setusername)
-			username=$2
+			newAccUsername=$2
 			;;
 		# Set custom password for new account (default: random)
 		-setuserpass)
-			password=$2
+			newAccPassword=$2
 			;;
 		# Set custom SSL certificate common name (CN) (default: google-analytics.com)
 		-seth2sslcn)
