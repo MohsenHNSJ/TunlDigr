@@ -10,7 +10,7 @@ Optimized for Iran
 - Configures `ufw` to allow port (can be customized)
 - Uses `AVX` optimized package automatically if the machine supports it (`amd64v3`)
 - Generates required certificates and keys (CN can be customized)
-- Generates QR-Code to connect easily  
+- Generates QR-Code to connect easily (can be disabled)  
 
 # Requires:  
 1. VPS with Linux OS outside of Iran and accessible by the user (Tests were done on Ubuntu 22.04)
@@ -54,7 +54,11 @@ the script generates a random password each time, you can override this behaviou
 ### `-settunnelport` (set custom port for protocol):  
 you can set custom port for protocols.  
 Acceptable range is `0 - 65535`. if input is invalid, it will be ignored.  
-default is `443` 
+default is `443`  
+
+### `-setservername` (set custom server name):
+you can set custom name for the server to show in connection configuration link.  
+default is server host name
 
 ---
 
