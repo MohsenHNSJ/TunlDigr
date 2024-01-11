@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.2.2"
+scriptVersion="0.2.3"
 
 generateRandom() {
     case "$1" in
@@ -202,8 +202,13 @@ switchUser() {
 	rm /temphysteria2folder/tempNewAccPassword.txt
 	rm /temphysteria2folder/templatestsingboxversion.txt
 
-	# We provide password to 'sudo' command and open port 443
-	echo $tempNewAccPassword | sudo -S ufw allow 443
+	# We provide password to 'sudo' command and open protocol port 
+    # We check wether user has provided custom port and if so, we check if it's in the acceptable range (0 - 65535)
+    # If not, we will use the dafault 443
+    if [ ! -v tunnelPort ] || [[ $tunnelPort != +([0-9]) ]] || [ $tunnelPort -gt 65535 ]; then       
+        tunnelPort=443
+    fi
+	echo $tempNewAccPassword | sudo -S ufw allow $tunnelPort
 }
 
 downloadSingBox() {
@@ -291,12 +296,6 @@ configureSingBox() {
         h2UserPass=$(generateRandom password)
     fi
 
-    # We check wether user has provided custom hysteria port and if so, we check if it's in the acceptable range (0 - 65535)
-    # If not, we will use the dafault 443
-    if [ ! -v h2Port ] || [[ $h2Port != +([0-9]) ]] || [ $h2Port -gt 65535 ]; then       
-        h2Port=443
-    fi
-
     # We store path of 'config.json' file
     configfile=/home/$tempNewAccUsername/hysteria2/config.json
 
@@ -312,7 +311,7 @@ configureSingBox() {
              "type":"hysteria2",
              "tag":"hy2-in",
              "listen":"::",
-             "listen_port":$h2Port,
+             "listen_port":$tunnelPort,
              "domain_strategy":"prefer_ipv4",
              "up_mbps":0,
              "down_mbps":0,
@@ -2438,6 +2437,10 @@ while [ ! -z "$1" ]; do
 		-setuserpass)
 			newAccPassword=$2
 			;;
+        # Set custom port for protcols
+        -settunnelport)
+            tunnelPort=$2
+            ;;
 		# Set custom SSL certificate common name for hysteria 2 (CN) (default: google-analytics.com)
 		-seth2sslcn)
 			h2sslcn=$2
@@ -2449,10 +2452,6 @@ while [ ! -z "$1" ]; do
         # Set custom password for hysteria 2 protocol authentication
         -seth2userpass)
             h2UserPass=$2
-            ;;
-        # Set custom port for hysteria 2 protcol
-        -seth2port)
-            h2Port=$2
             ;;
 	esac
 shift
