@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.2.3"
+scriptVersion="0.2.4"
 
 generateRandom() {
     case "$1" in
@@ -2374,9 +2374,48 @@ configureSingBox() {
     EOL
 }
 
+startHysteria() {
+    echo "========================================================================="
+    echo "|                         Starting Hysteria                             |"
+    echo "========================================================================="
+    # We now start Hysteria service
+    sudo systemctl start hysteria2 && sudo systemctl status hysteria2
+}
+
+showConnectionInformation() {
+    echo "========================================================================="
+    echo "|                                DONE                                   |"
+    echo "========================================================================="
+    # We get server ip
+    serverIp=$(hostname -I | awk '{ print $1}')
+
+    # We check wether user has provided custom server name
+	# If not, we will use hostname as server name
+    if [ ! -v serverName ]; then
+        serverName=$('hostname')
+    fi
+
+    # We show connection information
+    echo ""
+    echo "NAME : $serverName"
+    echo "ADDRESS : $serverIp"
+    echo "PORT : $tunnelPort"
+    echo "OBFUSCATION PASSWORD : $h2ObfsPass"
+    echo "AUTHENTICATION PASSWORD : $h2UserPass"
+    echo "ALLOW INSECURE : TRUE"
+    echo "=========="
+    echo "LOCAL USERNAME : $tempNewAccUsername"
+    echo "LOCAL PASSWORD : $tempNewAccPassword"
+    echo ""
+    echo "Write down the LOCAL USERNAME & LOCAL PASSWORD"
+    echo "you may need it for updating Sing-Box later"
+    echo "Usage of country-based routing is highly advised!"
+}
+
 installHysteria() {
-	echo
-	echo "installing Hysteria 2"
+	echo "========================================================================="
+	echo "|                        Installing Hysteria 2                          |"
+	echo "========================================================================="
 
 	# We check and save the latest version number of Sing-Box
 	latestsingboxversion="$(curl --silent "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
@@ -2392,6 +2431,10 @@ installHysteria() {
 	downloadSingBox
 
 	configureSingBox
+
+    startHysteria
+
+    showConnectionInformation
 }
 
 installReality() {
@@ -2440,6 +2483,10 @@ while [ ! -z "$1" ]; do
         # Set custom port for protcols
         -settunnelport)
             tunnelPort=$2
+            ;;
+        # Set custom server name
+        -setservername)
+            serverName=$2
             ;;
 		# Set custom SSL certificate common name for hysteria 2 (CN) (default: google-analytics.com)
 		-seth2sslcn)
