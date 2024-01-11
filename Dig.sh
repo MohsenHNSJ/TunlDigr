@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.2.4"
+scriptVersion="0.2.5"
 
 generateRandom() {
     case "$1" in
@@ -31,12 +31,6 @@ generateRandom() {
 }
 
 askTunnelingMethod() {
-	# We check wether the tunneling method is supplied at execution or not
-	# If so we will skip this step
-	if [ -v tunnelingMethod ]; then
-		return 0
-	fi
-
 	# We ask the user to select the desired tunneling method
 	# We limit the input character count to 1 by using (-n) argument
 	echo "========================================================================="
@@ -57,12 +51,6 @@ askTunnelingMethod() {
 }
 
 installPackages() {
-	# We check wether user requested to disable package updating or not
-	# If so we will skip this step
-	if [ -v disablePackageUpdating ]; then
-		return 0
-	fi
-
 	echo "========================================================================="
 	echo "|       Updating repositories and installing the required packages      |"
 	echo "|              (This may take a few minutes, Please wait...)            |"
@@ -86,12 +74,6 @@ showStartupMessage() {
 }
 
 optimizeServerSettings() {
-	# We check wether user has disabled server settings optimization or not
-	# If so we will skip this step
-	if [ -v disableServerOptimization ]; then
-		return 0
-	fi
-
 	echo "========================================================================="
 	echo "|                       Optimizing server settings                      |"
 	echo "========================================================================="
@@ -2420,7 +2402,11 @@ installHysteria() {
 	# We check and save the latest version number of Sing-Box
 	latestsingboxversion="$(curl --silent "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
 
-	optimizeServerSettings
+    # We check wether user has disabled server settings optimization or not
+	# If not, we will optimize server settings
+	if [ ! -v disableServerOptimization ]; then
+		optimizeServerSettings
+	fi
 
 	addNewUser
 
@@ -2434,7 +2420,9 @@ installHysteria() {
 
     startHysteria
 
-    showConnectionInformation
+    if [ ! -v disableConnectionInformation ]; then
+        showConnectionInformation
+    fi
 }
 
 installReality() {
@@ -2444,6 +2432,10 @@ installReality() {
 installShadowSocks() {
 	echo "installing ShadowSocks"
 }
+
+# <<< SCRIPT STARTS HERE >>>
+# <<< SCRIPT STARTS HERE >>>
+# <<< SCRIPT STARTS HERE >>>
 
 # We iterate through all provided arguments
 while [ ! -z "$1" ]; do
@@ -2472,6 +2464,10 @@ while [ ! -z "$1" ]; do
 		-dso)
 			disableServerOptimization=1
 			;;
+        # Disable showing connection information after finishing installation
+        -dci)
+            disableConnectionInformation=1
+            ;;
 		# Set custom username for new account (default: random)
 		-setusername)
 			newAccUsername=$2
@@ -2506,9 +2502,17 @@ done
 
 showStartupMessage
 
-askTunnelingMethod
+# We check wether the tunneling method is supplied at execution or not
+# If not, we will ask for it
+if [ ! -v tunnelingMethod ]; then
+	askTunnelingMethod
+fi
 
-installPackages
+# We check wether user requested to disable package updating or not
+# If not, we will update packages
+if [ ! -v disablePackageUpdating ]; then
+	installPackages
+fi
 
 # We call the function to set up the specified tunneling method
 case $tunnelingMethod in
