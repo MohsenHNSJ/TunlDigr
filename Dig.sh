@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.1.8"
+scriptVersion="0.1.9"
 
 askTunnelingMethod() {
 	# We check wether the tunneling method is supplied at execution or not
@@ -105,17 +105,20 @@ addNewUser() {
 	 } | sort -R | awk '{printf "%s",$1}')"
 	fi
 
-	# We generate a random password for the new user
-	# We avoid adding symbols inside the password as it sometimes caused problems, therefore the password lenght is high
-	choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
-	password="$({ choose '123456789'
-	  choose 'abcdefghijklmnopqrstuvwxyz'
-	  choose 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-	  for i in $( seq 1 $(( 18 + RANDOM % 4 )) )
-	     do
-	        choose '123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-	     done
-	 } | sort -R | awk '{printf "%s",$1}')"
+	# We check wether user has provided custom password
+	# If not, we will generate a random password
+	if [ ! -v password ]; then
+		# We avoid adding symbols inside the password as it sometimes caused problems, therefore the password lenght is high
+		choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
+		password="$({ choose '123456789'
+		choose 'abcdefghijklmnopqrstuvwxyz'
+		choose 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+		for i in $( seq 1 $(( 18 + RANDOM % 4 )) )
+			do
+				choose '123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+			done
+		} | sort -R | awk '{printf "%s",$1}')"
+	fi
 
 	 # We create a new user
 	adduser --gecos "" --disabled-password $username
@@ -248,7 +251,12 @@ downloadSingBox() {
 
 	# We create certificate keys
 	openssl ecparam -genkey -name prime256v1 -out ca.key
-	openssl req -new -x509 -days 36500 -key ca.key -out ca.crt -subj "/CN=google-analytics.com"
+	# We check wether user has provided custom common name for SSL certificate
+	# If not, we will use default
+	if [ ! -v sslcn ]; then
+		sslcn="google-analytics.com"
+	fi
+	openssl req -new -x509 -days 36500 -key ca.key -out ca.crt -subj "/CN=$sslcn"
 }
 
 installHysteria() {
@@ -296,18 +304,27 @@ while [ ! -z "$1" ]; do
 				tunnelingMethod=3	
 			fi
 			;;
-		# Disable package updating
+		# Disable package updating (not recommended)
 		-dpu)
 			disablePackageUpdating=1
 			;;
-		# Disable server settings optimization
+		# Disable server settings optimization (not recommended)
 		-dso)
 			disableServerOptimization=1
 			;;
-		# Set custom username for new account
+		# Set custom username for new account (default: random)
 		-setusername)
 			username=$2
 			;;
+		# Set custom password for new account (default: random)
+		-setuserpass)
+			password=$2
+			;;
+		# Set custom SSL certificate common name (CN) (default: google-analytics.com)
+		-setsslcn)
+			sslcn=$2
+			;;
+			
 	esac
 shift
 done
