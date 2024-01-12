@@ -1,23 +1,22 @@
 #!/bin/bash
 
-scriptVersion="0.3.0"
+scriptVersion="0.3.1"
 
 generateRandom() {
     case "$1" in
 	    username)
             choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
-	            local randomUsername="$({ choose 'abcdefghijklmnopqrstuvwxyz'
+	            local randomVariable="$({ choose 'abcdefghijklmnopqrstuvwxyz'
 	            for i in $( seq 1 $(( 6 + RANDOM % 4 )) )
 	            do
 	            choose 'abcdefghijklmnopqrstuvwxyz'
 	            done
 	            } | sort -R | awk '{printf "%s",$1}')"
-            echo $randomUsername
 			;;
         password)
         	# We avoid adding symbols inside the password as it sometimes caused problems, therefore the password lenght is high
         	choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
-		        local randomPassword="$({ choose '123456789'
+		        local randomVariable="$({ choose '123456789'
 		        choose 'abcdefghijklmnopqrstuvwxyz'
 		        choose 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 		        for i in $( seq 1 $(( 18 + RANDOM % 4 )) )
@@ -25,9 +24,10 @@ generateRandom() {
 				choose '123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 			    done
 		        } | sort -R | awk '{printf "%s",$1}')"
-            echo $randomPassword
             ;;
-	esac
+	    esac
+
+    echo $randomVariable
     }
 
 askTunnelingMethod() {
@@ -127,20 +127,20 @@ addNewUser() {
 	# We save the new user credentials to use after switching user
 	# We first must check if it already exists or not
 	# If it does exist, we must delete it and make a new one to store new temporary data
-	if [ -d "/temphysteria2folder" ]
+	if [ -d "/tunlDigrTemp" ]
 	    then
-	    rm -r /temphysteria2folder
-		sudo mkdir /temphysteria2folder
+	    rm -r /tunlDigrTemp
+		sudo mkdir /tunlDigrTemp
 	    else
-		sudo mkdir /temphysteria2folder
+		sudo mkdir /tunlDigrTemp
 	    fi
 
-	echo $newAccUsername > /temphysteria2folder/tempNewAccUsername.txt
-	echo $newAccPassword > /temphysteria2folder/tempNewAccPassword.txt
-	echo $latestSingBoxVersion > /temphysteria2folder/tempLatestSingBoxVersion.txt
+	echo $newAccUsername > /tunlDigrTemp/tempNewAccUsername.txt
+	echo $newAccPassword > /tunlDigrTemp/tempNewAccPassword.txt
+	echo $latestSingBoxVersion > /tunlDigrTemp/tempLatestSingBoxVersion.txt
 
 	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed
-	sudo chown -R $newAccUsername /temphysteria2folder/
+	sudo chown -R $newAccUsername /tunlDigrTemp/
     }
 
 createHysteriaService() {
@@ -175,14 +175,14 @@ switchUser() {
 	sshpass -p $newAccPassword ssh -o "StrictHostKeyChecking=no" $newAccUsername@127.0.0.1
 
 	# We read the saved credentials
-	tempNewAccUsername=$(</temphysteria2folder/tempNewAccUsername.txt)
-	tempNewAccPassword=$(</temphysteria2folder/tempNewAccPassword.txt)
-	tempLatestSingBoxVersion=$(</temphysteria2folder/tempLatestSingBoxVersion.txt)
+	tempNewAccUsername=$(</tunlDigrTemp/tempNewAccUsername.txt)
+	tempNewAccPassword=$(</tunlDigrTemp/tempNewAccPassword.txt)
+	tempLatestSingBoxVersion=$(</tunlDigrTemp/tempLatestSingBoxVersion.txt)
 
 	# We delete senstive inforamtion
-	rm /temphysteria2folder/tempNewAccUsername.txt
-	rm /temphysteria2folder/tempNewAccPassword.txt
-	rm /temphysteria2folder/tempLatestSingBoxVersion.txt
+	rm /tunlDigrTemp/tempNewAccUsername.txt
+	rm /tunlDigrTemp/tempNewAccPassword.txt
+	rm /tunlDigrTemp/tempLatestSingBoxVersion.txt
 
 	# We provide password to 'sudo' command and open protocol port 
     # We check wether user has provided custom port and if so, we check if it's in the acceptable range (0 - 65535)
@@ -2346,9 +2346,9 @@ configureSingBox() {
           ],
           "auto_detect_interface":true
        }
-        }
-        EOL
-    }
+}
+EOL
+}
 
 startHysteria() {
     echo "========================================================================="
@@ -2483,6 +2483,9 @@ installReality() {
 	if [ ! -v disableServerOptimization ]; then
 		optimizeServerSettings
 	    fi
+
+    addNewUser
+
 
     }
 
