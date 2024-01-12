@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.2.9"
+scriptVersion="0.3.0"
 
 generateRandom() {
     case "$1" in
@@ -2398,13 +2398,26 @@ showQrCode() {
     qrencode -t ansiutf8 $serverConfig
     }
 
+checkLatestVersion() {
+    case "$1" in
+        singbox)
+            local url="https://api.github.com/repos/SagerNet/sing-box/releases/latest"
+        ;;
+        xraycore)
+            local url="https://api.github.com/repos/XTLS/Xray-core/releases/latest"
+        ;;
+        esac
+
+    echo "$(curl --silent $url | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
+    }
+
 installHysteria() {
 	echo "========================================================================="
 	echo "|                        Installing Hysteria 2                          |"
 	echo "========================================================================="
 
 	# We check and save the latest version number of Sing-Box
-	latestSingBoxVersion="$(curl --silent "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
+	latestSingBoxVersion=$(checkLatestVersion singbox)
 
     # We check wether we were able to get the latest version of Sing-Box
     # If not, we will exit the script to prevent messing up something
@@ -2451,7 +2464,7 @@ installReality() {
 	echo "========================================================================="
 
     # We check and save the latest version number of Xray-Core
-    latestXrayVersion="$(curl --silent "https://api.github.com/repos/XTLS/Xray-core/releases/latest" | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
+    latestXrayVersion=$(checkLatestVersion xraycore)
 
     # We check wether we were able to get the latest version of Xray Core
     # If not, we will exit the script to prevent messing up something
