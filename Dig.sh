@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.2.7"
+scriptVersion="0.2.8"
 
 generateRandom() {
     case "$1" in
@@ -2412,6 +2412,18 @@ installHysteria() {
 	# We check and save the latest version number of Sing-Box
 	latestSingBoxVersion="$(curl --silent "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
 
+    # We check wether we were able to get the latest version of Sing-Box
+    # If not, we will exit the script to prevent messing up something
+    if [ -z $latestSingBoxVersion ]; then
+        echo "There is a problem while trying to get latest version of Sing-Box!"
+        echo "either:"
+        echo "1. You are offline"
+        echo "2. Access to github is blocked"
+        echo "3. repository is unavailable for some reason"
+        echo ""
+        echo "Script will now exit..."
+    fi
+
     # We check wether user has disabled server settings optimization or not
 	# If not, we will optimize server settings
 	if [ ! -v disableServerOptimization ]; then
@@ -2447,6 +2459,17 @@ installReality() {
     # We check and save the latest version number of Xray-Core
     latestXrayVersion="$(curl --silent "https://api.github.com/repos/XTLS/Xray-core/releases/latest" | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
 
+    # We check wether we were able to get the latest version of Xray Core
+    # If not, we will exit the script to prevent messing up something
+    if [ -z $latestXrayVersion ]; then
+        echo "There is a problem while trying to get latest version of Xray core!"
+        echo "either:"
+        echo "1. You are offline"
+        echo "2. Access to github is blocked"
+        echo "3. repository is unavailable for some reason"
+        echo ""
+        echo "Script will now exit..."
+    fi
 
 }
 
