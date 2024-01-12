@@ -2,6 +2,12 @@
 Creates Hysteria 2 / Reality / Shadowsocks tunnels **very fast** with **one command** while having the ability to customize every option if you want.  
 Optimized for Iran
 
+- [Features](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#features)
+- [Requirements](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#requires)
+- [Usage](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#usage)
+- [General Arguments](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#general-arguments)
+- [Hysteria Arguments](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#hysteria-arguments)
+
 # Features:  
 - Install and run LATEST Hysteria 2 server with one command for the following architectures: `amd64` `amd64v3` `arm64` `armv7`
 - Update required packages automatically (can be disabled)
@@ -12,7 +18,7 @@ Optimized for Iran
 - Generates required certificates and keys (CN can be customized)
 - Generates QR-Code to connect easily (can be disabled)  
 
-# Requires:  
+# Requirements:  
 1. VPS with Linux OS outside of Iran and accessible by the user (Tests were done on Ubuntu 22.04)
 2. Optionally upgrade all your OS packages to the latest version (for security and performance)  
 
