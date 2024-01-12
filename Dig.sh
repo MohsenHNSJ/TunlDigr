@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.3.4"
+scriptVersion="0.3.5"
 
 generateRandom() {
     case "$1" in
@@ -131,7 +131,7 @@ addNewUser() {
 	# If it does exist, we must delete it and make a new one to store new temporary data
 	if [ -d "/tunlDigrTemp" ]
 	    then
-	    rm -r /tunlDigrTemp
+	    sudo rm -r /tunlDigrTemp
 		sudo mkdir /tunlDigrTemp
 	    else
 		sudo mkdir /tunlDigrTemp
@@ -139,10 +139,9 @@ addNewUser() {
 
 	echo $newAccUsername > /tunlDigrTemp/tempNewAccUsername.txt
 	echo $newAccPassword > /tunlDigrTemp/tempNewAccPassword.txt
-    if [ ! -z $latestSingBoxVersion ]; then
+    if [ "$1" == hysteria2 ]; then
 	    echo $latestSingBoxVersion > /tunlDigrTemp/tempLatestSingBoxVersion.txt
-        fi
-    if [ ! -z $latestXrayVersion ]; then
+    elif [ "$1" == reality ]; then
         echo $latestXrayVersion > /tunlDigrTemp/tempLatestXrayVersion.txt
         fi
 
@@ -237,12 +236,17 @@ switchUser() {
 	# We read the saved credentials
 	tempNewAccUsername=$(</tunlDigrTemp/tempNewAccUsername.txt)
 	tempNewAccPassword=$(</tunlDigrTemp/tempNewAccPassword.txt)
-	tempLatestSingBoxVersion=$(</tunlDigrTemp/tempLatestSingBoxVersion.txt)
+    if [ "$1" == hysteria2 ]; then
+	    tempLatestSingBoxVersion=$(</tunlDigrTemp/tempLatestSingBoxVersion.txt)
+        sudo rm /tunlDigrTemp/tempLatestSingBoxVersion.txt
+    elif [ "$1" == reality ]; then
+        tempLatestXrayVersion=$(</tunlDigrTemp/tempLatestXrayVersion.txt)
+        sudo rm /tunlDigrTemp/tempLatestXrayVersion.txt
+        fi
 
 	# We delete senstive inforamtion
-	rm /tunlDigrTemp/tempNewAccUsername.txt
-	rm /tunlDigrTemp/tempNewAccPassword.txt
-	rm /tunlDigrTemp/tempLatestSingBoxVersion.txt
+	sudo rm /tunlDigrTemp/tempNewAccUsername.txt
+	sudo rm /tunlDigrTemp/tempNewAccPassword.txt
 
 	# We provide password to 'sudo' command and open protocol port 
     # We check wether user has provided custom port and if so, we check if it's in the acceptable range (0 - 65535)
@@ -261,7 +265,7 @@ downloadSingBox() {
 	# We create directory to hold Hysteria files
 	# If it does exist, we must delete it and make a new one to avoid conflicts
 	if [ -d "/hysteria2" ]; then
-		rm -r /hysteria2
+		sudo rm -r /hysteria2
 	    fi
 	mkdir hysteria2
 
@@ -301,7 +305,7 @@ downloadSingBox() {
 	tar -xzf sing-box-$latestSingBoxVersion-linux-$hwarch.tar.gz --strip-components=1 sing-box-$latestSingBoxVersion-linux-$hwarch/sing-box
 
 	# We remove downloaded file
-	rm sing-box-$latestSingBoxVersion-linux-$hwarch.tar.gz
+	sudo rm sing-box-$latestSingBoxVersion-linux-$hwarch.tar.gz
 
 	# We create certificate keys
 	openssl ecparam -genkey -name prime256v1 -out ca.key
@@ -2499,11 +2503,11 @@ installHysteria() {
 		optimizeServerSettings
 	    fi
 
-	addNewUser
+	addNewUser hysteria2
 
 	createService hysteria2
 
-	switchUser
+	switchUser hysteria2
 
 	downloadSingBox
 
@@ -2548,9 +2552,11 @@ installReality() {
 		optimizeServerSettings
 	    fi
 
-    addNewUser
+    addNewUser reality
 
     createService reality
+
+    switchUser reality
     }
 
 installShadowSocks() {
