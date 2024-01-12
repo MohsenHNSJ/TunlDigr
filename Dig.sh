@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.3.5"
+scriptVersion="0.3.6"
 
 generateRandom() {
     case "$1" in
@@ -151,38 +151,38 @@ addNewUser() {
 
 createService() {
 
-    hysteria2ServicePath="/etc/systemd/system/hysteria2.service"
-    hysteria2serviceDescription="sing-box service"
-    hysteriaCapabilityBoundingSet="CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH"
-    hysteriaAmbientCapabilities="CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH"
-    hysteriaExecStart="/home/$newAccUsername/hysteria2/sing-box -D /home/$newAccUsername/hysteria2/ run -c /home/$newAccUsername/hysteria2/config.json"
-    hysteriaLimitNOFILE="infinity"
+    local hysteria2ServicePath="/etc/systemd/system/hysteria2.service"
+    local hysteria2serviceDescription="sing-box service"
+    local hysteriaCapabilityBoundingSet="CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH"
+    local hysteriaAmbientCapabilities="CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH"
+    local hysteriaExecStart="/home/$newAccUsername/hysteria2/sing-box -D /home/$newAccUsername/hysteria2/ run -c /home/$newAccUsername/hysteria2/config.json"
+    local hysteriaLimitNOFILE="infinity"
 
-    realityServicePath="/etc/systemd/system/xray.service"
-    realityServiceDescription="XTLS Xray-Core a VMESS/VLESS Server"
-    realityCapabilityBoundingSet="CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
-    realityAmbientCapabilities="CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
-    realityExecStart="/home/$newAccUsername/xray/xray run -config /home/$newAccUsername/xray/config.json"
-    realityLimitNOFILE="1000000"
+    local realityServicePath="/etc/systemd/system/xray.service"
+    local realityServiceDescription="XTLS Xray-Core a VMESS/VLESS Server"
+    local realityCapabilityBoundingSet="CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
+    local realityAmbientCapabilities="CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
+    local realityExecStart="/home/$newAccUsername/xray/xray run -config /home/$newAccUsername/xray/config.json"
+    local realityLimitNOFILE="1000000"
 
     case "$1" in
         hysteria2)
-            servicePath=$hysteria2ServicePath
-            serviceName="Hysteria 2"
-            serviceDescription=$hysteria2serviceDescription
-            serviceCapabilityBoundingSet=$hysteriaCapabilityBoundingSet
-            serviceAmbientCapabilities=$hysteriaAmbientCapabilities
-            serviceExecStart=$hysteriaExecStart
-            serviceLimitNOFILE=$hysteriaLimitNOFILE
+            local servicePath=$hysteria2ServicePath
+            local serviceName="Hysteria 2"
+            local serviceDescription=$hysteria2serviceDescription
+            local serviceCapabilityBoundingSet=$hysteriaCapabilityBoundingSet
+            local serviceAmbientCapabilities=$hysteriaAmbientCapabilities
+            local serviceExecStart=$hysteriaExecStart
+            local serviceLimitNOFILE=$hysteriaLimitNOFILE
             ;;
         reality)
-            servicePath=$realityServicePath
-            serviceName="Reality"
-            serviceDescription=$realityServiceDescription
-            serviceCapabilityBoundingSet=$realityCapabilityBoundingSet
-            serviceAmbientCapabilities=$realityAmbientCapabilities
-            serviceExecStart=$realityExecStart
-            serviceLimitNOFILE=$realityLimitNOFILE
+            local servicePath=$realityServicePath
+            local serviceName="Reality"
+            local serviceDescription=$realityServiceDescription
+            local serviceCapabilityBoundingSet=$realityCapabilityBoundingSet
+            local serviceAmbientCapabilities=$realityAmbientCapabilities
+            local serviceExecStart=$realityExecStart
+            local serviceLimitNOFILE=$realityLimitNOFILE
             ;;
         esac
 
@@ -257,20 +257,29 @@ switchUser() {
 	echo $tempNewAccPassword | sudo -S ufw allow $tunnelPort
     }
 
-downloadSingBox() {
+downloadFiles() {
+        case "$1" in
+        hysteria2)
+            local protocolName="Hysteria 2"
+            ;;
+        xray)
+            local protocolName="Xray"
+            ;;
+        esac
+
 	echo "========================================================================="
-	echo "|               Downloading Sing-Box and required files                 |"
+	echo "|               Downloading $protocolName and required files                 |"
 	echo "========================================================================="
 
 	# We create directory to hold Hysteria files
 	# If it does exist, we must delete it and make a new one to avoid conflicts
-	if [ -d "/hysteria2" ]; then
-		sudo rm -r /hysteria2
+	if [ -d "/$1" ]; then
+		sudo rm -r /$1
 	    fi
-	mkdir hysteria2
+	mkdir $1
 
 	# We navigate to directory we created
-	cd hysteria2/
+	cd $1/
 
 	# We check and save the hardware architecture of current machine
 	hwarch="$(uname -m)"
@@ -2509,7 +2518,7 @@ installHysteria() {
 
 	switchUser hysteria2
 
-	downloadSingBox
+	downloadFiles hysteria2
 
 	configureSingBox
 
@@ -2557,6 +2566,8 @@ installReality() {
     createService reality
 
     switchUser reality
+
+    downloadFiles xray
     }
 
 installShadowSocks() {
