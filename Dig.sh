@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.2.6"
+scriptVersion="0.2.7"
 
 generateRandom() {
     case "$1" in
@@ -137,7 +137,7 @@ addNewUser() {
 
 	echo $newAccUsername > /temphysteria2folder/tempNewAccUsername.txt
 	echo $newAccPassword > /temphysteria2folder/tempNewAccPassword.txt
-	echo $latestsingboxversion > /temphysteria2folder/templatestsingboxversion.txt
+	echo $latestSingBoxVersion > /temphysteria2folder/tempLatestSingBoxVersion.txt
 
 	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed
 	sudo chown -R $newAccUsername /temphysteria2folder/
@@ -177,12 +177,12 @@ switchUser() {
 	# We read the saved credentials
 	tempNewAccUsername=$(</temphysteria2folder/tempNewAccUsername.txt)
 	tempNewAccPassword=$(</temphysteria2folder/tempNewAccPassword.txt)
-	templatestsingboxversion=$(</temphysteria2folder/templatestsingboxversion.txt)
+	tempLatestSingBoxVersion=$(</temphysteria2folder/tempLatestSingBoxVersion.txt)
 
 	# We delete senstive inforamtion
 	rm /temphysteria2folder/tempNewAccUsername.txt
 	rm /temphysteria2folder/tempNewAccPassword.txt
-	rm /temphysteria2folder/templatestsingboxversion.txt
+	rm /temphysteria2folder/tempLatestSingBoxVersion.txt
 
 	# We provide password to 'sudo' command and open protocol port 
     # We check wether user has provided custom port and if so, we check if it's in the acceptable range (0 - 65535)
@@ -241,13 +241,13 @@ downloadSingBox() {
 	esac
 
 	# We download the latest suitable package for current machine
-	wget https://github.com/SagerNet/sing-box/releases/download/v$latestsingboxversion/sing-box-$latestsingboxversion-linux-$hwarch.tar.gz
+	wget https://github.com/SagerNet/sing-box/releases/download/v$latestSingBoxVersion/sing-box-$latestSingBoxVersion-linux-$hwarch.tar.gz
 
 	# We extract the package
-	tar -xzf sing-box-$latestsingboxversion-linux-$hwarch.tar.gz --strip-components=1 sing-box-$latestsingboxversion-linux-$hwarch/sing-box
+	tar -xzf sing-box-$latestSingBoxVersion-linux-$hwarch.tar.gz --strip-components=1 sing-box-$latestSingBoxVersion-linux-$hwarch/sing-box
 
 	# We remove downloaded file
-	rm sing-box-$latestsingboxversion-linux-$hwarch.tar.gz
+	rm sing-box-$latestSingBoxVersion-linux-$hwarch.tar.gz
 
 	# We create certificate keys
 	openssl ecparam -genkey -name prime256v1 -out ca.key
@@ -2410,7 +2410,7 @@ installHysteria() {
 	echo "========================================================================="
 
 	# We check and save the latest version number of Sing-Box
-	latestsingboxversion="$(curl --silent "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
+	latestSingBoxVersion="$(curl --silent "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
 
     # We check wether user has disabled server settings optimization or not
 	# If not, we will optimize server settings
@@ -2440,7 +2440,14 @@ installHysteria() {
 }
 
 installReality() {
-	echo "installing Reality (XTLS VLESS)"
+	echo "========================================================================="
+	echo "|                          Installing Reality                           |"
+	echo "========================================================================="
+
+    # We check and save the latest version number of Xray-Core
+    latestXrayVersion="$(curl --silent "https://api.github.com/repos/XTLS/Xray-core/releases/latest" | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
+
+
 }
 
 installShadowSocks() {
