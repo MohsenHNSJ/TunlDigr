@@ -1,10 +1,10 @@
 #!/bin/bash
 
-scriptVersion="0.2.8"
+scriptVersion="0.2.9"
 
 generateRandom() {
     case "$1" in
-	username)
+	    username)
             choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
 	            local randomUsername="$({ choose 'abcdefghijklmnopqrstuvwxyz'
 	            for i in $( seq 1 $(( 6 + RANDOM % 4 )) )
@@ -28,7 +28,7 @@ generateRandom() {
             echo $randomPassword
             ;;
 	esac
-}
+    }
 
 askTunnelingMethod() {
 	# We ask the user to select the desired tunneling method
@@ -47,8 +47,8 @@ askTunnelingMethod() {
 	until [[ $tunnelingMethod == +([1-3]) ]]; do
 		echo
 		read -n 1 -p "Invalid input, please only input a number from 1 - 3: " tunnelingMethod
-	done
-}
+	    done
+    }
 
 installPackages() {
 	echo "========================================================================="
@@ -60,7 +60,7 @@ installPackages() {
 	# This installation must run without confirmation (-y)
 	sudo apt update
 	sudo apt -y install wget tar openssl gawk sshpass ufw coreutils curl adduser sed grep util-linux qrencode unzip snapd haveged
-}
+    }
 
 showStartupMessage() {
 	echo "========================================================================="
@@ -71,7 +71,7 @@ showStartupMessage() {
 	echo "=========================="
 	echo "| Script version $scriptVersion   |"
 	echo "=========================="
-}
+    }
 
 optimizeServerSettings() {
 	echo "========================================================================="
@@ -97,7 +97,7 @@ optimizeServerSettings() {
 
 	# We apply the changes
 	sudo sysctl -p
-}
+    }
 
 addNewUser() {
 	echo "========================================================================="
@@ -107,13 +107,13 @@ addNewUser() {
 	# If not, we will generate a random username
 	if [ ! -v newAccUsername ]; then
         newAccUsername=$(generateRandom username)
-	fi
+	    fi
 
 	# We check wether user has provided custom password
 	# If not, we will generate a random password
 	if [ ! -v newAccPassword ]; then
 		newAccPassword=$(generateRandom password)
-	fi
+	    fi
 
 	 # We create a new user
 	adduser --gecos "" --disabled-password $newAccUsername
@@ -128,12 +128,12 @@ addNewUser() {
 	# We first must check if it already exists or not
 	# If it does exist, we must delete it and make a new one to store new temporary data
 	if [ -d "/temphysteria2folder" ]
-	then
+	    then
 	    rm -r /temphysteria2folder
 		sudo mkdir /temphysteria2folder
-	else
+	    else
 		sudo mkdir /temphysteria2folder
-	fi
+	    fi
 
 	echo $newAccUsername > /temphysteria2folder/tempNewAccUsername.txt
 	echo $newAccPassword > /temphysteria2folder/tempNewAccPassword.txt
@@ -141,7 +141,7 @@ addNewUser() {
 
 	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed
 	sudo chown -R $newAccUsername /temphysteria2folder/
-}
+    }
 
 createHysteriaService() {
 	echo "========================================================================="
@@ -165,7 +165,7 @@ createHysteriaService() {
 	sudo echo "" >> /etc/systemd/system/hysteria2.service
 	sudo echo "[Install]" >> /etc/systemd/system/hysteria2.service
 	sudo echo "WantedBy=multi-user.target" >> /etc/systemd/system/hysteria2.service
-}
+    }
 
 switchUser() {
 	echo "========================================================================="
@@ -189,26 +189,20 @@ switchUser() {
     # If not, we will use the dafault 443
     if [ ! -v tunnelPort ] || [[ $tunnelPort != +([0-9]) ]] || [ $tunnelPort -gt 65535 ]; then       
         tunnelPort=443
-    fi
+        fi
 	echo $tempNewAccPassword | sudo -S ufw allow $tunnelPort
-}
+    }
 
 downloadSingBox() {
 	echo "========================================================================="
 	echo "|               Downloading Sing-Box and required files                 |"
 	echo "========================================================================="
-	then
-	    rm -r /temphysteria2folder
-		sudo mkdir /temphysteria2folder
-	else
-		sudo mkdir /temphysteria2folder
-	fi
 
 	# We create directory to hold Hysteria files
 	# If it does exist, we must delete it and make a new one to avoid conflicts
 	if [ -d "/hysteria2" ]; then
 		rm -r /hysteria2
-	fi
+	    fi
 	mkdir hysteria2
 
 	# We navigate to directory we created
@@ -217,28 +211,28 @@ downloadSingBox() {
 	# We check and save the hardware architecture of current machine
 	hwarch="$(uname -m)"
 
+    # We check if cpu supprt AVX
 	case $hwarch in 
-	x86_64)
-	# We check if cpu supprt AVX
-	avxsupport="$(lscpu | grep -o avx)"
+	    x86_64)
+	    avxsupport="$(lscpu | grep -o avx)"
 
-	if [ -z "$avxsupport" ];
-	then 
-		echo "AVX is NOT supported"
-		hwarch="amd64"
-	else
-		echo "AVX is Supported"
-		hwarch="amd64v3"
-	fi
-	;;
-	aarch64)
-	hwarch="arm64" ;;
-	armv7l)
-	hwarch="armv7" ;;
-	*)
-	echo "This architecture is NOT Supported by this script. exiting ..."
-	exit ;;
-	esac
+	        if [ -z "$avxsupport" ];
+	            then 
+		            echo "AVX is NOT supported"
+		            hwarch="amd64"
+	            else
+		            echo "AVX is Supported"
+		            hwarch="amd64v3"
+	            fi
+	    ;;
+	    aarch64)
+	        hwarch="arm64" ;;
+	    armv7l)
+	        hwarch="armv7" ;;
+	    *)
+	        echo "This architecture is NOT Supported by this script. exiting ..."
+	        exit ;;
+	    esac
 
 	# We download the latest suitable package for current machine
 	wget https://github.com/SagerNet/sing-box/releases/download/v$latestSingBoxVersion/sing-box-$latestSingBoxVersion-linux-$hwarch.tar.gz
@@ -255,9 +249,9 @@ downloadSingBox() {
 	# If not, we will use default
 	if [ ! -v sslcn ]; then
 		sslcn="google-analytics.com"
-	fi
+	    fi
 	openssl req -new -x509 -days 36500 -key ca.key -out ca.crt -subj "/CN=$sslcn"
-}
+    }
 
 configureSingBox() {
 	echo "========================================================================="
@@ -270,13 +264,13 @@ configureSingBox() {
 	# If not, we will generate a random password for salamander obfs
 	if [ ! -v h2ObfsPass ]; then
     	h2ObfsPass=$(generateRandom password)
-    fi
+        fi
 
     # We check wether user has provided custom hysteria authentication password
     # If not, we will generate a random password for hysteria user
     if [ ! -v h2UserPass ]; then
         h2UserPass=$(generateRandom password)
-    fi
+        fi
 
     # We store path of 'config.json' file
     configfile=/home/$tempNewAccUsername/hysteria2/config.json
@@ -2352,9 +2346,9 @@ configureSingBox() {
           ],
           "auto_detect_interface":true
        }
+        }
+        EOL
     }
-    EOL
-}
 
 startHysteria() {
     echo "========================================================================="
@@ -2362,7 +2356,7 @@ startHysteria() {
     echo "========================================================================="
     # We now start Hysteria service
     sudo systemctl start hysteria2 && sudo systemctl status hysteria2
-}
+    }
 
 showConnectionInformation() {
     echo "========================================================================="
@@ -2375,7 +2369,7 @@ showConnectionInformation() {
 	# If not, we will use hostname as server name
     if [ ! -v serverName ]; then
         serverName=$('hostname')
-    fi
+        fi
 
     # We show connection information
     echo ""
@@ -2392,7 +2386,7 @@ showConnectionInformation() {
     echo "Write down the LOCAL USERNAME & LOCAL PASSWORD"
     echo "you may need it for updating Sing-Box later"
     echo "Usage of country-based routing is highly advised!"
-}
+    }
 
 showQrCode() {
     echo "========================================================================="
@@ -2402,7 +2396,7 @@ showQrCode() {
 
     # We output a qrcode to ease connection
     qrencode -t ansiutf8 $serverConfig
-}
+    }
 
 installHysteria() {
 	echo "========================================================================="
@@ -2422,13 +2416,13 @@ installHysteria() {
         echo "3. repository is unavailable for some reason"
         echo ""
         echo "Script will now exit..."
-    fi
+        fi
 
     # We check wether user has disabled server settings optimization or not
 	# If not, we will optimize server settings
 	if [ ! -v disableServerOptimization ]; then
 		optimizeServerSettings
-	fi
+	    fi
 
 	addNewUser
 
@@ -2444,12 +2438,12 @@ installHysteria() {
 
     if [ ! -v disableConnectionInformation ]; then
         showConnectionInformation
-    fi
+        fi
 
     if [ ! -v disableQrCode ]; then
         showQrCode
-    fi
-}
+        fi
+    }
 
 installReality() {
 	echo "========================================================================="
@@ -2469,13 +2463,19 @@ installReality() {
         echo "3. repository is unavailable for some reason"
         echo ""
         echo "Script will now exit..."
-    fi
+        fi
 
-}
+    # We check wether user has disabled server settings optimization or not
+	# If not, we will optimize server settings
+	if [ ! -v disableServerOptimization ]; then
+		optimizeServerSettings
+	    fi
+
+    }
 
 installShadowSocks() {
 	echo "installing ShadowSocks"
-}
+    }
 
 # <<< SCRIPT STARTS HERE >>>
 # <<< SCRIPT STARTS HERE >>>
@@ -2544,9 +2544,9 @@ while [ ! -z "$1" ]; do
         -seth2userpass)
             h2UserPass=$2
             ;;
-	esac
-shift
-done
+	    esac
+    shift
+    done
 
 showStartupMessage
 
@@ -2554,23 +2554,23 @@ showStartupMessage
 # If not, we will ask for it
 if [ ! -v tunnelingMethod ]; then
 	askTunnelingMethod
-fi
+    fi
 
 # We check wether user requested to disable package updating or not
 # If not, we will update packages
 if [ ! -v disablePackageUpdating ]; then
 	installPackages
-fi
+    fi
 
 # We call the function to set up the specified tunneling method
 case $tunnelingMethod in
 	1)
-	installHysteria
+	    installHysteria
 	;;
 	2)
-	installReality
+	    installReality
 	;;
 	3)
-	installShadowSocks
+	    installShadowSocks
 	;;
-esac
+    esac
