@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.3.3"
+scriptVersion="0.3.4"
 
 generateRandom() {
     case "$1" in
@@ -150,28 +150,81 @@ addNewUser() {
 	sudo chown -R $newAccUsername /tunlDigrTemp/
     }
 
-createHysteriaService() {
+createService() {
+
+    hysteria2ServicePath="/etc/systemd/system/hysteria2.service"
+    hysteria2serviceDescription="sing-box service"
+    hysteriaCapabilityBoundingSet="CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH"
+    hysteriaAmbientCapabilities="CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH"
+    hysteriaExecStart="/home/$newAccUsername/hysteria2/sing-box -D /home/$newAccUsername/hysteria2/ run -c /home/$newAccUsername/hysteria2/config.json"
+    hysteriaLimitNOFILE="infinity"
+
+    realityServicePath="/etc/systemd/system/xray.service"
+    realityServiceDescription="XTLS Xray-Core a VMESS/VLESS Server"
+    realityCapabilityBoundingSet="CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
+    realityAmbientCapabilities="CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
+    realityExecStart="/home/$newAccUsername/xray/xray run -config /home/$newAccUsername/xray/config.json"
+    realityLimitNOFILE="1000000"
+
+    case "$1" in
+        hysteria2)
+            servicePath=$hysteria2ServicePath
+            serviceName="Hysteria 2"
+            serviceDescription=$hysteria2serviceDescription
+            serviceCapabilityBoundingSet=$hysteriaCapabilityBoundingSet
+            serviceAmbientCapabilities=$hysteriaAmbientCapabilities
+            serviceExecStart=$hysteriaExecStart
+            serviceLimitNOFILE=$hysteriaLimitNOFILE
+            ;;
+        reality)
+            servicePath=$realityServicePath
+            serviceName="Reality"
+            serviceDescription=$realityServiceDescription
+            serviceCapabilityBoundingSet=$realityCapabilityBoundingSet
+            serviceAmbientCapabilities=$realityAmbientCapabilities
+            serviceExecStart=$realityExecStart
+            serviceLimitNOFILE=$realityLimitNOFILE
+            ;;
+        esac
+
 	echo "========================================================================="
-	echo "|                      Creating Hysteria 2 service                      |"
+	echo "|                      Creating $serviceName service                     "
 	echo "========================================================================="
+
 	# We create a service file
-	sudo echo "[Unit]" > /etc/systemd/system/hysteria2.service
-	sudo echo "Description=sing-box service" >> /etc/systemd/system/hysteria2.service
-	sudo echo "Documentation=https://sing-box.sagernet.org" >> /etc/systemd/system/hysteria2.service
-	sudo echo "After=network.target nss-lookup.target" >> /etc/systemd/system/hysteria2.service
-	sudo echo "[Service]" >> /etc/systemd/system/hysteria2.service
-	sudo echo "User=$newAccUsername" >> /etc/systemd/system/hysteria2.service
-	sudo echo "Group=$newAccUsername" >> /etc/systemd/system/hysteria2.service
-	sudo echo "CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH" >> /etc/systemd/system/hysteria2.service
-	sudo echo "AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH" >> /etc/systemd/system/hysteria2.service
-	sudo echo "ExecStart=/home/$newAccUsername/hysteria2/sing-box -D /home/$newAccUsername/hysteria2/ run -c /home/$newAccUsername/hysteria2/config.json" >> /etc/systemd/system/hysteria2.service
-	sudo echo "ExecReload=/bin/kill -HUP \$MAINPID" >> /etc/systemd/system/hysteria2.service
-	sudo echo "Restart=on-failure" >> /etc/systemd/system/hysteria2.service
-	sudo echo "RestartSec=10s" >> /etc/systemd/system/hysteria2.service
-	sudo echo "LimitNOFILE=infinity" >> /etc/systemd/system/hysteria2.service
-	sudo echo "" >> /etc/systemd/system/hysteria2.service
-	sudo echo "[Install]" >> /etc/systemd/system/hysteria2.service
-	sudo echo "WantedBy=multi-user.target" >> /etc/systemd/system/hysteria2.service
+	sudo echo "[Unit]" > $servicePath
+	sudo echo "Description=$serviceDescription" >> $servicePath
+    if [ "$1" == hysteria2 ]; then
+	    sudo echo "Documentation=https://sing-box.sagernet.org" >> $servicePath
+        fi
+	sudo echo "After=network.target nss-lookup.target" >> $servicePath
+	sudo echo "[Service]" >> $servicePath
+	sudo echo "User=$newAccUsername" >> $servicePath
+	sudo echo "Group=$newAccUsername" >> $servicePath
+	sudo echo "CapabilityBoundingSet=$serviceCapabilityBoundingSet" >> $servicePath
+	sudo echo "AmbientCapabilities=$serviceAmbientCapabilities" >> $servicePath
+    if [ "$1" == reality ]; then
+        sudo echo "NoNewPrivileges=true" >> $servicePath
+        fi
+	sudo echo "ExecStart=$serviceExecStart" >> $servicePath
+    if [ "$1" == hysteria2 ]; then
+	    sudo echo "ExecReload=/bin/kill -HUP \$MAINPID" >> $servicePath
+        fi
+	sudo echo "Restart=on-failure" >> $servicePath
+    if [ "$1" == reality ]; then
+        sudo echo "RestartPreventExitStatus=23" >> $servicePath
+        sudo echo "StandardOutput=journal" >> $servicePath
+        fi
+    if [ "$1" == hysteria2 ]; then
+	    sudo echo "RestartSec=10s" >> $servicePath
+        fi
+    if [ "$1" == reality ]; then
+        sudo echo "LimitNPROC=100000" >> $servicePath
+        fi
+	sudo echo "LimitNOFILE=$serviceLimitNOFILE" >> $servicePath
+	sudo echo "" >> $servicePath
+	sudo echo "[Install]" >> $servicePath
+	sudo echo "WantedBy=multi-user.target" >> $servicePath
     }
 
 switchUser() {
@@ -2448,7 +2501,7 @@ installHysteria() {
 
 	addNewUser
 
-	createHysteriaService
+	createService hysteria2
 
 	switchUser
 
@@ -2497,7 +2550,7 @@ installReality() {
 
     addNewUser
 
-
+    createService reality
     }
 
 installShadowSocks() {
