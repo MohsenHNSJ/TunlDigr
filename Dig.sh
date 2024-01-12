@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.3.2"
+scriptVersion="0.3.3"
 
 generateRandom() {
     case "$1" in
@@ -48,6 +48,8 @@ askTunnelingMethod() {
 		echo
 		read -n 1 -p "Invalid input, please only input a number from 1 - 3: " tunnelingMethod
 	    done
+
+    echo ""
     }
 
 installPackages() {
@@ -137,7 +139,12 @@ addNewUser() {
 
 	echo $newAccUsername > /tunlDigrTemp/tempNewAccUsername.txt
 	echo $newAccPassword > /tunlDigrTemp/tempNewAccPassword.txt
-	echo $latestSingBoxVersion > /tunlDigrTemp/tempLatestSingBoxVersion.txt
+    if [ ! -z $latestSingBoxVersion ]; then
+	    echo $latestSingBoxVersion > /tunlDigrTemp/tempLatestSingBoxVersion.txt
+        fi
+    if [ ! -z $latestXrayVersion ]; then
+        echo $latestXrayVersion > /tunlDigrTemp/tempLatestXrayVersion.txt
+        fi
 
 	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed
 	sudo chown -R $newAccUsername /tunlDigrTemp/
