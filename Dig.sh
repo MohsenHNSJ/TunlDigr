@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.3.1"
+scriptVersion="0.3.2"
 
 generateRandom() {
     case "$1" in
@@ -2429,6 +2429,8 @@ installHysteria() {
         echo "3. repository is unavailable for some reason"
         echo ""
         echo "Script will now exit..."
+
+        exit
         fi
 
     # We check wether user has disabled server settings optimization or not
@@ -2476,6 +2478,8 @@ installReality() {
         echo "3. repository is unavailable for some reason"
         echo ""
         echo "Script will now exit..."
+
+        exit
         fi
 
     # We check wether user has disabled server settings optimization or not
