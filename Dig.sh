@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.6.0"
+scriptVersion="0.6.1"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -4726,7 +4726,7 @@ showQrCode() {
     qrencode -t ansiutf8 $serverConfig
     }
 
-# Checks the repository of the selected tunnel and echos back the latest release version of it
+# Checks the repository of the selected tunnel and echos back the latest release version of it.
 checkLatestVersion() {
     case $tunnelingMethod in
         hysteria2)
@@ -4736,40 +4736,11 @@ checkLatestVersion() {
             local url="https://api.github.com/repos/XTLS/Xray-core/releases/latest"
         ;;
         esac
-
+    # We echo back the latest package version.
     echo "$(curl --silent $url | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
     }
 
-installHysteria() {
-    createSSLCertificateKeyPairs
-
-	configureSingBox
-
-    startService
-
-    if [ ! -v disableConnectionInformation ]; then
-        showConnectionInformation
-        fi
-
-    if [ ! -v disableQrCode ]; then
-        showQrCode
-        fi
-    }
-
-installReality() {
-    configureXray
-
-    startService
-
-    if [ ! -v disableConnectionInformation ]; then
-        showConnectionInformation
-        fi
-
-    if [ ! -v disableQrCode ]; then
-        showQrCode
-        fi
-    }
-
+# Main installation pipeline for tunnels.
 installTunnel() {
     # We determine the selected tunneling method and set tunnel variables accordingly.
     case $tunnelingMethod in
@@ -4816,10 +4787,31 @@ installTunnel() {
     allowPortOnUfw
     # We download the required files for tunnel.
     downloadFiles
-    }
-
-installShadowSocks() {
-	echo "installing ShadowSocks"
+    # Hysteria 2 SSL Certificate creation
+    if [ $tunnelingMethod == hysteria2 ]; then
+        createSSLCertificateKeyPairs
+        fi  
+    # We determine the selected tunneling method and configure tunnel accordingly.
+    case $tunnelingMethod in
+        hysteria2)
+            configureSingBox
+            ;;
+        reality)
+            configureXray
+            ;;
+        esac
+    # We start the tunnel service.
+    startService
+    # We check wether user has disabled showing connection information or not.
+	# If not, we will show connection information.
+    if [ ! -v disableConnectionInformation ]; then
+        showConnectionInformation
+        fi
+    # We check wether user has disabled showing QR Code or not.
+	# If not, we will show QR Code.
+    if [ ! -v disableQrCode ]; then
+        showQrCode
+        fi
     }
 
 # <<< SCRIPT STARTS HERE >>>
@@ -4913,5 +4905,5 @@ if [ ! -v disablePackageUpdating ]; then
 	installPackages
     fi
 
-
+# We call the installation pipeline
 installTunnel
