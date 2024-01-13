@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.5.7"
+scriptVersion="0.5.8"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -4735,12 +4735,13 @@ showQrCode() {
     qrencode -t ansiutf8 $serverConfig
     }
 
+# Checks the repository of the selected tunnel and echos back the latest release version of it
 checkLatestVersion() {
-    case "$1" in
-        singbox)
+    case $tunnelingMethod in
+        hysteria2)
             local url="https://api.github.com/repos/SagerNet/sing-box/releases/latest"
         ;;
-        xraycore)
+        reality)
             local url="https://api.github.com/repos/XTLS/Xray-core/releases/latest"
         ;;
         esac
@@ -4754,7 +4755,7 @@ installHysteria() {
 	echo "========================================================================="
 
 	# We check and save the latest version number of Sing-Box
-	latestSingBoxVersion=$(checkLatestVersion singbox)
+	latestSingBoxVersion=$(checkLatestVersion)
 
     # We check wether we were able to get the latest version of Sing-Box
     # If not, we will exit the script to prevent messing up something
@@ -4811,7 +4812,7 @@ installReality() {
 	echo "========================================================================="
 
     # We check and save the latest version number of Xray-Core
-    latestXrayVersion=$(checkLatestVersion xraycore)
+    latestXrayVersion=$(checkLatestVersion)
 
     # We check wether we were able to get the latest version of Xray Core
     # If not, we will exit the script to prevent messing up something
