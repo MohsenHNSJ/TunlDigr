@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.6.1"
+scriptVersion="0.6.2"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -80,15 +80,20 @@ installPackages() {
 	# We install/update the packages we use during the process to ensure optimal performance.
 	# This installation must run without confirmation (-y)
 	sudo apt update
-    # We only install the required files for each protocol, some are general and required by all, the specific ones are at the end.
+    # We define the tunnel specific package
     case $tunnelingMethod in
         hysteria2)
-        sudo apt -y install wget openssl gawk sshpass ufw coreutils curl adduser sed grep util-linux qrencode haveged tar
+            local tunnelSpecificPackage=tar
             ;;
         reality)
-	    sudo apt -y install wget openssl gawk sshpass ufw coreutils curl adduser sed grep util-linux qrencode haveged unzip
+	        local tunnelSpecificPackage=unzip
+            ;;
+        shadowsocks)
+            local tunnelSpecificPackage=snapd
             ;;
         esac
+    # We install the general + tunnel specific packages
+    sudo apt -y install wget openssl gawk sshpass ufw coreutils curl adduser sed grep util-linux qrencode haveged $tunnelSpecificPackage
     }
 
 # Shows a startup message and version of the script.
@@ -117,6 +122,23 @@ optimizeServerSettings() {
 	sudo echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
 	sudo echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
 	sudo echo "fs.file-max = 65535000" >> /etc/sysctl.conf
+    # ShadowSocks specific optimizations
+    if [ $tunnelingMethod == shadowsocks ]; then
+	    sudo echo "net.core.netdev_max_backlog = 250000" >> /etc/sysctl.conf
+        sudo echo "net.core.somaxconn = 4096" >> /etc/sysctl.conf
+        sudo echo "net.ipv4.tcp_syncookies = 1" >> /etc/sysctl.conf
+        sudo echo "net.ipv4.tcp_tw_reuse = 1" >> /etc/sysctl.conf
+        sudo echo "net.ipv4.tcp_tw_recycle = 0" >> /etc/sysctl.conf
+        sudo echo "net.ipv4.tcp_fin_timeout = 30" >> /etc/sysctl.conf
+        sudo echo "net.ipv4.tcp_max_syn_backlog = 8192" >> /etc/sysctl.conf
+        sudo echo "net.ipv4.tcp_max_tw_buckets = 5000" >> /etc/sysctl.conf
+        sudo echo "net.ipv4.tcp_mtu_probing = 1" >> /etc/sysctl.conf
+        sudo echo "net.core.rmem_max = 67108864" >> /etc/sysctl.conf
+        sudo echo "net.core.wmem_max = 67108864" >> /etc/sysctl.conf
+        sudo echo "net.ipv4.tcp_mem = 25600 51200 102400" >> /etc/sysctl.conf
+        sudo echo "net.ipv4.tcp_rmem = 4096 87380 67108864" >> /etc/sysctl.conf
+        sudo echo "net.ipv4.tcp_wmem = 4096 65536 67108864" >> /etc/sysctl.conf
+        fi
 	# We optimise 'limits.conf' file for better performance.
 	sudo echo "* soft     nproc          655350" >> /etc/security/limits.conf
 	sudo echo "* hard     nproc          655350" >> /etc/security/limits.conf
@@ -4731,10 +4753,10 @@ checkLatestVersion() {
     case $tunnelingMethod in
         hysteria2)
             local url="https://api.github.com/repos/SagerNet/sing-box/releases/latest"
-        ;;
+            ;;
         reality)
             local url="https://api.github.com/repos/XTLS/Xray-core/releases/latest"
-        ;;
+            ;;
         esac
     # We echo back the latest package version.
     echo "$(curl --silent $url | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
@@ -4750,24 +4772,32 @@ installTunnel() {
         reality)
             local tunnelName="Reality"
             ;;
+        shadowsocks)
+            local tunnelName="ShadowSocks"
+            ;;
         esac
 	echo "========================================================================="
 	echo "|                        Installing $tunnelName                          |"
 	echo "========================================================================="
-    # We check and save the latest package version number.
-    latestPackageVersion=$(checkLatestVersion)
-    # We check wether we were able to get the latest package version.
-    # If not, we will exit the script to prevent messing up something.
-    if [ -z $latestPackageVersion ]; then
-        echo "There is a problem while trying to get latest version of $tunnelName!"
-        echo "either:"
-        echo "1. You are offline"
-        echo "2. Access to github is blocked"
-        echo "3. repository is unavailable for some reason"
-        echo 
-        echo "Script will now exit..."
-        exit
-        fi
+    # If the selected tunnel is Hysteria 2 or Reality, we check and save the latest package version number.
+    # ShadowSocks uses (snap) to install and does not need to check a url.
+    case $tunnelingMethod in
+        hysteria2 || reality)
+            latestPackageVersion=$(checkLatestVersion)
+            # We check wether we were able to get the latest package version.
+            # If not, we will exit the script to prevent messing up something.
+            if [ -z $latestPackageVersion ]; then
+                echo "There is a problem while trying to get latest version of $tunnelName!"
+                echo "either:"
+                echo "1. You are offline"
+                echo "2. Access to github is blocked"
+                echo "3. repository is unavailable for some reason"
+                echo 
+                echo "Script will now exit..."
+                exit
+                fi
+            ;;
+        esac
     # We check wether user has disabled server settings optimization or not.
 	# If not, we will optimize server settings.
 	if [ ! -v disableServerOptimization ]; then
