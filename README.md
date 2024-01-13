@@ -9,7 +9,7 @@ Optimized for Iran
 - [Hysteria Arguments](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#hysteria-arguments)
 
 # Features:  
-- install and run LATEST Reality server with one command for the following architectures: `i386` `amd64` `arm64` `armv7` `s390x`
+- install and run LATEST Reality server with one command for the following architectures: `i386` `amd64` `arm64` `armv7` `s390x` `ppc64` `armv6l`
 - Install and run LATEST Hysteria 2 server with one command for the following architectures: `i386` `amd64` `amd64v3` `arm64` `armv7` `s390x`
 - Update required packages automatically (can be disabled)
 - Optimize server settings for best performance (can be disabled)
@@ -59,6 +59,9 @@ useful in case you have customized everything.
 ### `-dqrcode` (disable qr code):
 by adding this flag, the script will *NOT* show QR Code at the end of setup.  
 useful in case the screen resolution is too small.  
+
+### `-dstartmsg` (disable startup message):  
+by adding this flag, the script will *NOT* show the startup message.  
 
 ### `-setusername` (set custom username):
 the script generates a random username each time, you can override this behaviour and provide your custom username to be used when creating a new user.  
