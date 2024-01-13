@@ -1,7 +1,11 @@
 #!/bin/bash
 
-scriptVersion="0.4.2"
+scriptVersion="0.4.3"
 
+# Generates a random variable and echos it back
+# <<<Options
+#   username: generate and return a random short ( 6 - 10 ) username
+#   password: generate and return a random long ( 18 - 22 ) password
 generateRandom() {
     case "$1" in
 	    username)
@@ -26,13 +30,13 @@ generateRandom() {
 		        } | sort -R | awk '{printf "%s",$1}')"
             ;;
 	    esac
-
     echo $randomVariable
     }
 
+# Asks the user to select a tunneling method by entering a numeric value from 1 to 3
+# Checks input for validity and if it's a valid, it will convert it to a string and save it in (tunnelingMethod) variable
+# Current available methods: (1) Hysteria 2, (2) Reality, (3) ShadowSocks
 askTunnelingMethod() {
-	# We ask the user to select the desired tunneling method
-	# We limit the input character count to 1 by using (-n) argument
 	echo "========================================================================="
 	echo "|             Select the desired tunneling method to set up             |"
 	echo "|                   Enter only numbers between 1 - 3                    |"
@@ -41,15 +45,29 @@ askTunnelingMethod() {
 	echo "2 - Reality (XTLS VLESS)"
 	echo "3 - Shadowsocks (Obsolete)"
 
+    # We ask the user to select the desired tunneling method
+	# We limit the input character count to 1 by using (-n) argument
 	read -n 1 -p "Select tunneling method: " tunnelingMethod
 
-	# We validate user input
+	# We validate user input and show an error if it's invalid, then loop the process until the value is valid
 	until [[ $tunnelingMethod == +([1-3]) ]]; do
 		echo
 		read -n 1 -p "Invalid input, please only input a number from 1 - 3: " tunnelingMethod
 	    done
 
-    echo ""
+    # We convert the input value from user, to a string for better code readability
+    case $tunnelingMethod in
+	    1)
+	        tunnelingMethod="hysteria2"
+	    ;;
+	    2)
+	        tunnelingMethod="reality"
+	    ;;
+	    3)
+	        tunnelingMethod="shadowsocks"
+	    ;;
+        esac
+    echo
     }
 
 installPackages() {
