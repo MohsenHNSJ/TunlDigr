@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.4.6"
+scriptVersion="0.4.7"
 
 # Generates a random variable and echos it back
 # <<<Options
@@ -70,9 +70,6 @@ askTunnelingMethod() {
 
 # Installs the required packages for specified tunneling method
 # Can be disabled by -dpakup
-# <<<Options
-#   hysteria2: Installs the packages needed for setting up Hysteria 2 tunnel 
-#   reality: Installs the packages needed for setting up Reality tunnel
 installPackages() {
 	echo "========================================================================="
 	echo "|       Updating repositories and installing the required packages      |"
@@ -83,7 +80,7 @@ installPackages() {
 	# This installation must run without confirmation (-y)
 	sudo apt update
     # We only install the required files for each protocol, some are general and required by all, the specific ones are at the end
-    case "$1" in
+    case $tunnelingMethod in
         hysteria2)
         sudo apt -y install wget openssl gawk sshpass ufw coreutils curl adduser sed grep util-linux qrencode haveged tar
             ;;
@@ -134,6 +131,7 @@ optimizeServerSettings() {
 	sudo sysctl -p
     }
 
+# Saves the new user's name and password as well as the latest version of selected tunneling method to be used after switching to the new user
 saveAndTransferCredentials() {
     # We save the new user credentials to use after switching user
 	# We first must check if it already exists or not
@@ -185,8 +183,6 @@ addNewUser() {
 
 	# We grant root privileges to the new user
 	usermod -aG sudo $newAccUsername	
-
-    saveAndTransferCredentials
     }
 
 createService() {
@@ -4905,7 +4901,7 @@ if [ ! -v tunnelingMethod ]; then
 # We check wether user requested to disable package updating or not
 # If not, we will update packages
 if [ ! -v disablePackageUpdating ]; then
-	installPackages $tunnelingMethod
+	installPackages
     fi
 
 # We call the function to set up the specified tunneling method
