@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.4.3"
+scriptVersion="0.4.4"
 
 # Generates a random variable and echos it back
 # <<<Options
@@ -35,7 +35,7 @@ generateRandom() {
 
 # Asks the user to select a tunneling method by entering a numeric value from 1 to 3
 # Checks input for validity and if it's a valid, it will convert it to a string and save it in (tunnelingMethod) variable
-# Current available methods: (1) Hysteria 2, (2) Reality, (3) ShadowSocks
+# Current available tunnels: (1) Hysteria 2, (2) Reality, (3) ShadowSocks
 askTunnelingMethod() {
 	echo "========================================================================="
 	echo "|             Select the desired tunneling method to set up             |"
@@ -44,17 +44,14 @@ askTunnelingMethod() {
 	echo "1 - Hysteria 2"
 	echo "2 - Reality (XTLS VLESS)"
 	echo "3 - Shadowsocks (Obsolete)"
-
     # We ask the user to select the desired tunneling method
 	# We limit the input character count to 1 by using (-n) argument
 	read -n 1 -p "Select tunneling method: " tunnelingMethod
-
 	# We validate user input and show an error if it's invalid, then loop the process until the value is valid
 	until [[ $tunnelingMethod == +([1-3]) ]]; do
 		echo
 		read -n 1 -p "Invalid input, please only input a number from 1 - 3: " tunnelingMethod
 	    done
-
     # We convert the input value from user, to a string for better code readability
     case $tunnelingMethod in
 	    1)
@@ -70,6 +67,10 @@ askTunnelingMethod() {
     echo
     }
 
+# Installs the required packages for specified tunneling method
+# <<<Options
+#   hysteria2: Installs the packages needed for setting up Hysteria 2 tunnel 
+#   reality: Installs the packages needed for setting up Reality tunnel
 installPackages() {
 	echo "========================================================================="
 	echo "|       Updating repositories and installing the required packages      |"
@@ -79,7 +80,15 @@ installPackages() {
 	# We install/update the packages we use during the process to ensure optimal performance
 	# This installation must run without confirmation (-y)
 	sudo apt update
-	sudo apt -y install wget tar openssl gawk sshpass ufw coreutils curl adduser sed grep util-linux qrencode unzip snapd haveged
+    # We only install the required files for each protocol, some are general and required by all, the specific ones are at the end
+    case "$1" in
+        hysteria2)
+        sudo apt -y install wget openssl gawk sshpass ufw coreutils curl adduser sed grep util-linux qrencode haveged tar
+            ;;
+        reality)
+	    sudo apt -y install wget openssl gawk sshpass ufw coreutils curl adduser sed grep util-linux qrencode haveged unzip
+            ;;
+        esac
     }
 
 showStartupMessage() {
@@ -4795,8 +4804,6 @@ installShadowSocks() {
     }
 
 # <<< SCRIPT STARTS HERE >>>
-# <<< SCRIPT STARTS HERE >>>
-# <<< SCRIPT STARTS HERE >>>
 
 # We iterate through all provided arguments
 while [ ! -z "$1" ]; do
@@ -4806,15 +4813,15 @@ while [ ! -z "$1" ]; do
 			shift
 			# Hysteria 2
 			if [ $1 == "h2" ]; then
-				tunnelingMethod=1
+				tunnelingMethod="hysteria2"
 			fi
 			# Reality
 			if [ $1 == "xr" ]; then
-				tunnelingMethod=2
+				tunnelingMethod="reality"
 			fi
 			# Shadowsocks
 			if [ $1 == "ss" ]; then
-				tunnelingMethod=3	
+				tunnelingMethod="shadowsocks"	
 			fi
 			;;
 		# Disable package updating (not recommended)
@@ -4876,18 +4883,18 @@ if [ ! -v tunnelingMethod ]; then
 # We check wether user requested to disable package updating or not
 # If not, we will update packages
 if [ ! -v disablePackageUpdating ]; then
-	installPackages
+	installPackages $tunnelingMethod
     fi
 
 # We call the function to set up the specified tunneling method
 case $tunnelingMethod in
-	1)
+	hysteria2)
 	    installHysteria
 	;;
-	2)
+	reality)
 	    installReality
 	;;
-	3)
+	shadowsocks)
 	    installShadowSocks
 	;;
     esac
