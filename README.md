@@ -20,7 +20,7 @@ Optimized for Iran
 - Generates QR-Code to connect easily (can be disabled)  
 
 # Requirements:  
-1. VPS with Linux OS outside of Iran and accessible by the user (Tests were done on Ubuntu 22.04)
+1. VPS with Linux OS (Tests were done on Ubuntu 22.04)
 2. Optionally upgrade all your OS packages to the latest version (for security and performance)  
 
 # Usage:
