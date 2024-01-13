@@ -1,8 +1,8 @@
 #!/bin/bash
 
-scriptVersion="0.5.2"
+scriptVersion="0.5.3"
 
-# Generates a random variable and echos it back
+# Generates a random variable and echos it back.
 # <<<Options
 #   username: generate and return a random short ( 6 - 10 ) username
 #   password: generate and return a random long ( 18 - 22 ) password
@@ -34,9 +34,9 @@ generateRandom() {
     echo $randomVariable
     }
 
-# Asks the user to select a tunneling method by entering a numeric value from 1 to 3
-# Can be skipped by -tm and specifing a method in the argument
-# Checks input for validity and if it's a valid, it will convert it to a string and save it in (tunnelingMethod) variable
+# Asks the user to select a tunneling method by entering a numeric value from 1 to 3.
+# Can be skipped by -tm and specifing a method in the argument.
+# Checks input for validity and if it's a valid, it will convert it to a string and save it in (tunnelingMethod) variable.
 # Current available tunnels: (1) Hysteria 2, (2) Reality, (3) ShadowSocks
 askTunnelingMethod() {
 	echo "========================================================================="
@@ -69,7 +69,7 @@ askTunnelingMethod() {
     echo
     }
 
-# Installs the required packages for specified tunneling method
+# Installs the required packages for specified tunneling method.
 # Can be disabled by -dpakup
 installPackages() {
 	echo "========================================================================="
@@ -91,7 +91,7 @@ installPackages() {
         esac
     }
 
-# Shows a startup message and version of the script 
+# Shows a startup message and version of the script.
 # can be disabled by -dstartmsg
 showStartupMessage() {
 	echo "========================================================================="
@@ -104,7 +104,7 @@ showStartupMessage() {
 	echo "=========================="
     }
 
-# Optimizes the server settings (sysctl.conf, limits.conf) to better handle connections
+# Optimizes the server settings (sysctl.conf, limits.conf) to better handle connections.
 # Can be disabled by -dservopti
 optimizeServerSettings() {
 	echo "========================================================================="
@@ -130,7 +130,7 @@ optimizeServerSettings() {
 	sudo sysctl -p
     }
 
-# Saves the new user's name and password as well as the latest version of selected tunneling method to be used after switching to the new user
+# Saves the new user's name and password as well as the latest version of selected tunneling method to be used after switching to the new user.
 saveAndTransferCredentials() {
 	echo "========================================================================="
 	echo "|                           Saving Credentials                          |"
@@ -158,7 +158,11 @@ saveAndTransferCredentials() {
 	sudo chown -R $newAccUsername /tunlDigrTemp/
     }
 
+# Reads the new user's name and password as well as the latest version of selected tunneling method, then removed the files containing these information.
 readAndRemoveCredentials() {
+	echo "========================================================================="
+	echo "|                           Reading Credentials                          |"
+	echo "========================================================================="
 	# We read the saved credentials
 	tempNewAccUsername=$(</tunlDigrTemp/tempNewAccUsername.txt)
 	tempNewAccPassword=$(</tunlDigrTemp/tempNewAccPassword.txt)
@@ -175,7 +179,12 @@ readAndRemoveCredentials() {
 	sudo rm /tunlDigrTemp/tempNewAccPassword.txt
     }
 
+# Allows the specified port (tunnelPort) on ufw
+# If port is not provided, 443 is used by default
 allowPortOnUfw() {
+    echo "========================================================================="
+	echo "|                             Allowing Port                             |"
+	echo "========================================================================="
 	# We provide password to 'sudo' command and open protocol port 
     # We check wether user has provided custom port and if so, we check if it's in the acceptable range (0 - 65535)
     # If not, we will use the dafault 443
