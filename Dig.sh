@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.4.5"
+scriptVersion="0.4.6"
 
 # Generates a random variable and echos it back
 # <<<Options
@@ -106,6 +106,8 @@ showStartupMessage() {
 	echo "=========================="
     }
 
+# Optimizes the server settings (sysctl.conf, limits.conf) to better handle connections
+# Can be disabled by -dservopti
 optimizeServerSettings() {
 	echo "========================================================================="
 	echo "|                       Optimizing server settings                      |"
@@ -132,6 +134,33 @@ optimizeServerSettings() {
 	sudo sysctl -p
     }
 
+saveAndTransferCredentials() {
+    # We save the new user credentials to use after switching user
+	# We first must check if it already exists or not
+	# If it does exist, we must delete it and make a new one to store new temporary data
+	if [ -d "/tunlDigrTemp" ]
+	    then
+	    sudo rm -r /tunlDigrTemp
+		sudo mkdir /tunlDigrTemp
+	    else
+		sudo mkdir /tunlDigrTemp
+	    fi
+
+	echo $newAccUsername > /tunlDigrTemp/tempNewAccUsername.txt
+	echo $newAccPassword > /tunlDigrTemp/tempNewAccPassword.txt
+    if [ $tunnelingMethod == hysteria2 ]; then
+	    echo $latestSingBoxVersion > /tunlDigrTemp/tempLatestSingBoxVersion.txt
+    elif [ $tunnelingMethod == reality ]; then
+        echo $latestXrayVersion > /tunlDigrTemp/tempLatestXrayVersion.txt
+        fi
+
+	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed
+	sudo chown -R $newAccUsername /tunlDigrTemp/
+    }
+
+# Creates a new user
+# Uses the supplied newAccUsername(-setusername) & newAccPassword(-setuserpass) if available
+# if not, it will randomly generate unavailable ones, using (generateRandom) function
 addNewUser() {
 	echo "========================================================================="
 	echo "|                  Adding a new user and configuring                    |"
@@ -155,29 +184,9 @@ addNewUser() {
 	chpasswd <<<"$newAccUsername:$newAccPassword"
 
 	# We grant root privileges to the new user
-	usermod -aG sudo $newAccUsername
+	usermod -aG sudo $newAccUsername	
 
-	# We save the new user credentials to use after switching user
-	# We first must check if it already exists or not
-	# If it does exist, we must delete it and make a new one to store new temporary data
-	if [ -d "/tunlDigrTemp" ]
-	    then
-	    sudo rm -r /tunlDigrTemp
-		sudo mkdir /tunlDigrTemp
-	    else
-		sudo mkdir /tunlDigrTemp
-	    fi
-
-	echo $newAccUsername > /tunlDigrTemp/tempNewAccUsername.txt
-	echo $newAccPassword > /tunlDigrTemp/tempNewAccPassword.txt
-    if [ "$1" == hysteria2 ]; then
-	    echo $latestSingBoxVersion > /tunlDigrTemp/tempLatestSingBoxVersion.txt
-    elif [ "$1" == reality ]; then
-        echo $latestXrayVersion > /tunlDigrTemp/tempLatestXrayVersion.txt
-        fi
-
-	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed
-	sudo chown -R $newAccUsername /tunlDigrTemp/
+    saveAndTransferCredentials
     }
 
 createService() {
@@ -4731,7 +4740,9 @@ installHysteria() {
 		optimizeServerSettings
 	    fi
 
-	addNewUser hysteria2
+	addNewUser
+
+    saveAndTransferCredentials
 
 	createService hysteria2
 
@@ -4782,7 +4793,9 @@ installReality() {
 		optimizeServerSettings
 	    fi
 
-    addNewUser reality
+    addNewUser
+
+    saveAndTransferCredentials
 
     createService reality
 
