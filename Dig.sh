@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.5.4"
+scriptVersion="0.5.5"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -413,72 +413,73 @@ getHardwareArch() {
     echo $hwarch
     }
 
+# Creates SSL certificate key pairs.
+# Uses the supplies sslcn(-seth2sslcn) if available.
+# If not, will use the default (google-analytics.com)
 createSSLCertificateKeyPairs() {
-    # We create certificate keys
+    # We create certificate keys.
 	openssl ecparam -genkey -name prime256v1 -out ca.key
-	# We check wether user has provided custom common name for SSL certificate
-	# If not, we will use default
+	# We check wether user has provided custom common name for SSL certificate.
+	# If not, we will use default.
 	if [ ! -v sslcn ]; then
 		sslcn="google-analytics.com"
 	    fi
 	openssl req -new -x509 -days 36500 -key ca.key -out ca.crt -subj "/CN=$sslcn"
     }
 
+# Downloads the required files for selected tunnel and extracts them, then removes the downloaded package.
+# TODO: Rework the reality downloader to use reality as name not xray (this makes some confusion later on).
 downloadFiles() {
+    # Get current hardware architecture.
     local hardwareArch=$(getHardwareArch)
-
+    # Hysteria 2
     local singBoxUrl="https://github.com/SagerNet/sing-box/releases/download/v$latestSingBoxVersion/sing-box-$latestSingBoxVersion-linux-$hardwareArch.tar.gz"
     local singBoxPackageName="sing-box-$latestSingBoxVersion-linux-$hardwareArch.tar.gz"
-
+    # Reality
     local xrayUrl="https://github.com/XTLS/Xray-core/releases/download/v$latestXrayVersion/Xray-linux-$hardwareArch.zip"
     local xrayPackageName="Xray-linux-$hardwareArch.zip"
-
-    case "$1" in
+    # We determine the selected tunneling method and set download variables accordingly.
+    case $tunnelingMethod in
         hysteria2)
             local protocolName="Hysteria 2"
             local packageUrl=$singBoxUrl
             local packageName=$singBoxPackageName
+            local directoryName="hysteria2"
             ;;
-        xray)
+        reality)
             local protocolName="Xray"
             local packageUrl=$xrayUrl
             local packageName=$xrayPackageName
+            local directoryName="xray"
             ;;
             esac
-
     echo "========================================================================="
 	echo "|               Downloading $protocolName and required files                 |"
 	echo "========================================================================="
-
-	# We create directory to hold files
-	# If it does exist, we must delete it and make a new one to avoid conflicts
-	if [ -d "/$1" ]; then
-		sudo rm -r /$1
+	# We create directory to hold files.
+	# If it does exist, we must delete it and make a new one to avoid conflicts.
+	if [ -d "/$directoryName" ]; then
+		sudo rm -r /$directoryName
 	    fi
-	mkdir $1
-
-	# We navigate to directory we created
-	cd $1/
-
-	# We download the latest suitable package for current machine
+	mkdir $directoryName
+	# We navigate to directory we created.
+	cd $directoryName/
+	# We download the latest suitable package for current machine.
 	wget $packageUrl
-
-    # If we running Xray, we also download geoasset file
-    if [ $1 == xray ]; then
+    # If we running Reality, we also download geoasset file.
+    if [ $tunnelingMethod == reality ]; then
         wget https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat
         fi
-
-    # We extract the package
-    case "$1" in
+    # We extract the package.
+    case $tunnelingMethod in
         hysteria2)
             tar -xzf $packageName --strip-components=1 sing-box-$latestSingBoxVersion-linux-$hwarch/sing-box
             ;;
-        xray)
+        reality)
             unzip $packageName
             ;;
             esac
-
-	# We remove downloaded file
+	# We remove downloaded file.
 	sudo rm $packageName
     }
 
@@ -4781,7 +4782,7 @@ installHysteria() {
 
     allowPortOnUfw
 
-	downloadFiles hysteria2
+	downloadFiles
 
     createSSLCertificateKeyPairs
 
@@ -4838,7 +4839,7 @@ installReality() {
 
     allowPortOnUfw
 
-    downloadFiles xray
+    downloadFiles
 
     configureXray
 
