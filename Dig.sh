@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.5.8"
+scriptVersion="0.6.0"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -149,11 +149,7 @@ saveAndTransferCredentials() {
 	echo $newAccUsername > /tunlDigrTemp/tempNewAccUsername.txt
 	echo $newAccPassword > /tunlDigrTemp/tempNewAccPassword.txt
     # We save the latest version of tunneling method.
-    if [ $tunnelingMethod == hysteria2 ]; then
-	    echo $latestSingBoxVersion > /tunlDigrTemp/tempLatestSingBoxVersion.txt
-    elif [ $tunnelingMethod == reality ]; then
-        echo $latestXrayVersion > /tunlDigrTemp/tempLatestXrayVersion.txt
-        fi
+	echo $latestPackageVersion > /tunlDigrTemp/tempLatestPackageVersion.txt
 	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed.
 	sudo chown -R $newAccUsername /tunlDigrTemp/
     }
@@ -167,13 +163,8 @@ readAndRemoveCredentials() {
 	tempNewAccUsername=$(</tunlDigrTemp/tempNewAccUsername.txt)
 	tempNewAccPassword=$(</tunlDigrTemp/tempNewAccPassword.txt)
     # We read the latest version of tunneling method.
-    if [ $tunnelingMethod == hysteria2 ]; then
-	    tempLatestSingBoxVersion=$(</tunlDigrTemp/tempLatestSingBoxVersion.txt)
-        sudo rm /tunlDigrTemp/tempLatestSingBoxVersion.txt
-    elif [ $tunnelingMethod == reality ]; then
-        tempLatestXrayVersion=$(</tunlDigrTemp/tempLatestXrayVersion.txt)
-        sudo rm /tunlDigrTemp/tempLatestXrayVersion.txt
-        fi
+    tempLatestPackageVersion=$(</tunlDigrTemp/tempLatestPackageVersion.txt)
+    sudo rm /tunlDigrTemp/tempLatestPackageVersion.txt
 	# We delete senstive inforamtion.
 	sudo rm /tunlDigrTemp/tempNewAccUsername.txt
 	sudo rm /tunlDigrTemp/tempNewAccPassword.txt
@@ -433,10 +424,10 @@ downloadFiles() {
     # Get current hardware architecture.
     local hardwareArch=$(getHardwareArch)
     # Hysteria 2
-    local singBoxUrl="https://github.com/SagerNet/sing-box/releases/download/v$latestSingBoxVersion/sing-box-$latestSingBoxVersion-linux-$hardwareArch.tar.gz"
-    local singBoxPackageName="sing-box-$latestSingBoxVersion-linux-$hardwareArch.tar.gz"
+    local singBoxUrl="https://github.com/SagerNet/sing-box/releases/download/v$tempLatestPackageVersion/sing-box-$tempLatestPackageVersion-linux-$hardwareArch.tar.gz"
+    local singBoxPackageName="sing-box-$tempLatestPackageVersion-linux-$hardwareArch.tar.gz"
     # Reality
-    local xrayUrl="https://github.com/XTLS/Xray-core/releases/download/v$latestXrayVersion/Xray-linux-$hardwareArch.zip"
+    local xrayUrl="https://github.com/XTLS/Xray-core/releases/download/v$tempLatestPackageVersion/Xray-linux-$hardwareArch.zip"
     local xrayPackageName="Xray-linux-$hardwareArch.zip"
     # We determine the selected tunneling method and set download variables accordingly.
     case $tunnelingMethod in
@@ -473,7 +464,7 @@ downloadFiles() {
     # We extract the package.
     case $tunnelingMethod in
         hysteria2)
-            tar -xzf $packageName --strip-components=1 sing-box-$latestSingBoxVersion-linux-$hwarch/sing-box
+            tar -xzf $packageName --strip-components=1 sing-box-$tempLatestPackageVersion-linux-$hwarch/sing-box
             ;;
         reality)
             unzip $packageName
@@ -4750,47 +4741,6 @@ checkLatestVersion() {
     }
 
 installHysteria() {
-	echo "========================================================================="
-	echo "|                        Installing Hysteria 2                          |"
-	echo "========================================================================="
-
-	# We check and save the latest version number of Sing-Box
-	latestSingBoxVersion=$(checkLatestVersion)
-
-    # We check wether we were able to get the latest version of Sing-Box
-    # If not, we will exit the script to prevent messing up something
-    if [ -z $latestSingBoxVersion ]; then
-        echo "There is a problem while trying to get latest version of Sing-Box!"
-        echo "either:"
-        echo "1. You are offline"
-        echo "2. Access to github is blocked"
-        echo "3. repository is unavailable for some reason"
-        echo ""
-        echo "Script will now exit..."
-
-        exit
-        fi
-
-    # We check wether user has disabled server settings optimization or not
-	# If not, we will optimize server settings
-	if [ ! -v disableServerOptimization ]; then
-		optimizeServerSettings
-	    fi
-
-	addNewUser
-
-    saveAndTransferCredentials
-
-	createService
-
-	switchUser
-
-    readAndRemoveCredentials
-
-    allowPortOnUfw
-
-	downloadFiles
-
     createSSLCertificateKeyPairs
 
 	configureSingBox
@@ -4807,47 +4757,6 @@ installHysteria() {
     }
 
 installReality() {
-	echo "========================================================================="
-	echo "|                          Installing Reality                           |"
-	echo "========================================================================="
-
-    # We check and save the latest version number of Xray-Core
-    latestXrayVersion=$(checkLatestVersion)
-
-    # We check wether we were able to get the latest version of Xray Core
-    # If not, we will exit the script to prevent messing up something
-    if [ -z $latestXrayVersion ]; then
-        echo "There is a problem while trying to get latest version of Xray core!"
-        echo "either:"
-        echo "1. You are offline"
-        echo "2. Access to github is blocked"
-        echo "3. repository is unavailable for some reason"
-        echo ""
-        echo "Script will now exit..."
-
-        exit
-        fi
-
-    # We check wether user has disabled server settings optimization or not
-	# If not, we will optimize server settings
-	if [ ! -v disableServerOptimization ]; then
-		optimizeServerSettings
-	    fi
-
-    addNewUser
-
-    saveAndTransferCredentials
-
-    createService
-
-    switchUser
-
-    readAndRemoveCredentials
-
-    allowPortOnUfw
-
-    downloadFiles
-
     configureXray
 
     startService
@@ -4859,6 +4768,54 @@ installReality() {
     if [ ! -v disableQrCode ]; then
         showQrCode
         fi
+    }
+
+installTunnel() {
+    # We determine the selected tunneling method and set tunnel variables accordingly.
+    case $tunnelingMethod in
+        hysteria2)
+            local tunnelName="Hysteria 2"
+            ;;
+        reality)
+            local tunnelName="Reality"
+            ;;
+        esac
+	echo "========================================================================="
+	echo "|                        Installing $tunnelName                          |"
+	echo "========================================================================="
+    # We check and save the latest package version number.
+    latestPackageVersion=$(checkLatestVersion)
+    # We check wether we were able to get the latest package version.
+    # If not, we will exit the script to prevent messing up something.
+    if [ -z $latestPackageVersion ]; then
+        echo "There is a problem while trying to get latest version of $tunnelName!"
+        echo "either:"
+        echo "1. You are offline"
+        echo "2. Access to github is blocked"
+        echo "3. repository is unavailable for some reason"
+        echo 
+        echo "Script will now exit..."
+        exit
+        fi
+    # We check wether user has disabled server settings optimization or not.
+	# If not, we will optimize server settings.
+	if [ ! -v disableServerOptimization ]; then
+		optimizeServerSettings
+	    fi
+    # We add a new user.
+    addNewUser
+    # We save new user information and latest package version in a file to access after switching user.
+    saveAndTransferCredentials
+    # We create a service for tunnel.
+    createService
+    # We switch to the new user.
+    switchUser
+    # We read the saved information and delete the files afterwards.
+    readAndRemoveCredentials
+    # We allow the tunnel port at ufw.
+    allowPortOnUfw
+    # We download the required files for tunnel.
+    downloadFiles
     }
 
 installShadowSocks() {
@@ -4956,15 +4913,5 @@ if [ ! -v disablePackageUpdating ]; then
 	installPackages
     fi
 
-# We call the function to set up the specified tunneling method
-case $tunnelingMethod in
-	hysteria2)
-	    installHysteria
-	;;
-	reality)
-	    installReality
-	;;
-	shadowsocks)
-	    installShadowSocks
-	;;
-    esac
+
+installTunnel
