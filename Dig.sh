@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.5.5"
+scriptVersion="0.5.6"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -4638,20 +4638,22 @@ configureXray() {
 EOL
 }
 
-startHysteria() {
+# Starts the tunnel service based on the specified tunneling method.
+startService() {
+    # We determine the selected tunneling method and set service name accordingly.
+    case $tunnelingMethod in
+        hysteria2)
+            local serviceName="hysteria2"
+            ;;
+        reality)
+            local serviceName="xray"
+            ;;
+        esac
     echo "========================================================================="
-    echo "|                         Starting Hysteria                             |"
+    echo "|                         Starting Service                              |"
     echo "========================================================================="
-    # We now start Hysteria service
-    sudo systemctl start hysteria2 && sudo systemctl status hysteria2
-    }
-
-startXray() {
-    echo "========================================================================="
-    echo "|                           Starting xray                               |"
-    echo "========================================================================="
-    # We now start xray service
-    sudo systemctl start xray && sudo systemctl status xray
+    # We now start the tunnel service.
+    sudo systemctl start $serviceName && sudo systemctl status $serviceName
     }
 
 showConnectionInformation() {
@@ -4788,7 +4790,7 @@ installHysteria() {
 
 	configureSingBox
 
-    startHysteria
+    startService
 
     if [ ! -v disableConnectionInformation ]; then
         showConnectionInformation hysteria2
@@ -4843,7 +4845,7 @@ installReality() {
 
     configureXray
 
-    startXray
+    startService
 
     if [ ! -v disableConnectionInformation ]; then
         showConnectionInformation reality
@@ -4860,7 +4862,7 @@ installShadowSocks() {
 
 # <<< SCRIPT STARTS HERE >>>
 
-# We iterate through all provided arguments
+# We iterate through all provided arguments.
 while [ ! -z "$1" ]; do
 	case "$1" in
 		# Tunneling method
@@ -4879,22 +4881,23 @@ while [ ! -z "$1" ]; do
 				tunnelingMethod="shadowsocks"	
 			fi
 			;;
-		# Disable package updating (not recommended)
+		# Disable package updating.
 		-dpakup)
 			disablePackageUpdating=1
 			;;
-		# Disable server settings optimization (not recommended)
+		# Disable server settings optimization.
 		-dservopti)
 			disableServerOptimization=1
 			;;
-        # Disable showing connection information after finishing installation
+        # Disable showing connection information after finishing installation.
         -dconinfo)
             disableConnectionInformation=1
             ;;
-        # Disable showing QR code after finishing installation
+        # Disable showing QR code after finishing installation.
         -dqrcode)
             disableQrCode=1
             ;;
+        # Disable showing the startup message
         -dstartmsg)
             disableStartupMessage=1
             ;;
@@ -4922,7 +4925,7 @@ while [ ! -z "$1" ]; do
         -seth2obfspass)
             h2ObfsPass=$2
             ;;
-        # Set custom password for hysteria 2 protocol authentication
+        # Set custom password for hysteria 2 protocol authentication password
         -seth2userpass)
             h2UserPass=$2
             ;;
@@ -4930,6 +4933,8 @@ while [ ! -z "$1" ]; do
     shift
     done
 
+# We check wether user requested to disable startup message or not.
+# If not, we will show the startup message.
 if [ ! -v disableStartupMessage ]; then
     showStartupMessage
     fi
