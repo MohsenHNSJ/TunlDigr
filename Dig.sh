@@ -1,12 +1,13 @@
 #!/bin/bash
 
-scriptVersion="0.4.8"
+scriptVersion="0.4.9"
 
 # Generates a random variable and echos it back
 # <<<Options
 #   username: generate and return a random short ( 6 - 10 ) username
 #   password: generate and return a random long ( 18 - 22 ) password
 generateRandom() {
+    # We read the argument supplied to the function to determine which type of random variable to generate and echo back
     case "$1" in
 	    username)
             choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
@@ -143,9 +144,10 @@ saveAndTransferCredentials() {
 	    else
 		sudo mkdir /tunlDigrTemp
 	    fi
-
+    # We save the credentials into files to access later
 	echo $newAccUsername > /tunlDigrTemp/tempNewAccUsername.txt
 	echo $newAccPassword > /tunlDigrTemp/tempNewAccPassword.txt
+    # We save the latest version of the tunneling method
     if [ $tunnelingMethod == hysteria2 ]; then
 	    echo $latestSingBoxVersion > /tunlDigrTemp/tempLatestSingBoxVersion.txt
     elif [ $tunnelingMethod == reality ]; then
@@ -185,6 +187,7 @@ addNewUser() {
 	usermod -aG sudo $newAccUsername	
     }
 
+# Creates the required service file for the selected tunnel
 createService() {
 
     local hysteria2ServicePath="/etc/systemd/system/hysteria2.service"
@@ -201,7 +204,7 @@ createService() {
     local realityExecStart="/home/$newAccUsername/xray/xray run -config /home/$newAccUsername/xray/config.json"
     local realityLimitNOFILE="1000000"
 
-    case "$1" in
+    case $tunnelingMethod in
         hysteria2)
             local servicePath=$hysteria2ServicePath
             local serviceName="Hysteria 2"
@@ -229,7 +232,7 @@ createService() {
 	# We create a service file
 	sudo echo "[Unit]" > $servicePath
 	sudo echo "Description=$serviceDescription" >> $servicePath
-    if [ "$1" == hysteria2 ]; then
+    if [ $tunnelingMethod == hysteria2 ]; then
 	    sudo echo "Documentation=https://sing-box.sagernet.org" >> $servicePath
         fi
 	sudo echo "After=network.target nss-lookup.target" >> $servicePath
@@ -450,7 +453,7 @@ downloadFiles() {
     }
 
 configureSingBox() {
-	echo "========================================================================="
+    echo "========================================================================="
     echo "|                       Configuring Sing-Box                            |"
     echo "========================================================================="
     # We restart the service and enable auto-start
@@ -4740,7 +4743,7 @@ installHysteria() {
 
     saveAndTransferCredentials
 
-	createService hysteria2
+	createService
 
 	switchUser hysteria2
 
@@ -4793,7 +4796,7 @@ installReality() {
 
     saveAndTransferCredentials
 
-    createService reality
+    createService
 
     switchUser reality
 
