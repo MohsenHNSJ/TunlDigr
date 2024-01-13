@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.4.9"
+scriptVersion="0.5.0"
 
 # Generates a random variable and echos it back
 # <<<Options
@@ -117,7 +117,6 @@ optimizeServerSettings() {
 	sudo echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
 	sudo echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
 	sudo echo "fs.file-max = 65535000" >> /etc/sysctl.conf
-
 	# We optimise 'limits.conf' file for better performance
 	sudo echo "* soft     nproc          655350" >> /etc/security/limits.conf
 	sudo echo "* hard     nproc          655350" >> /etc/security/limits.conf
@@ -127,7 +126,6 @@ optimizeServerSettings() {
 	sudo echo "root hard     nproc          655350" >> /etc/security/limits.conf
 	sudo echo "root soft     nofile         655350" >> /etc/security/limits.conf
 	sudo echo "root hard     nofile         655350" >> /etc/security/limits.conf
-
 	# We apply the changes
 	sudo sysctl -p
     }
@@ -153,7 +151,6 @@ saveAndTransferCredentials() {
     elif [ $tunnelingMethod == reality ]; then
         echo $latestXrayVersion > /tunlDigrTemp/tempLatestXrayVersion.txt
         fi
-
 	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed
 	sudo chown -R $newAccUsername /tunlDigrTemp/
     }
@@ -170,40 +167,38 @@ addNewUser() {
 	if [ ! -v newAccUsername ]; then
         newAccUsername=$(generateRandom username)
 	    fi
-
 	# We check wether user has provided custom password
 	# If not, we will generate a random password
 	if [ ! -v newAccPassword ]; then
 		newAccPassword=$(generateRandom password)
 	    fi
-
 	 # We create a new user
 	adduser --gecos "" --disabled-password $newAccUsername
-
 	# We set a password for the new user
 	chpasswd <<<"$newAccUsername:$newAccPassword"
-
 	# We grant root privileges to the new user
 	usermod -aG sudo $newAccUsername	
     }
 
-# Creates the required service file for the selected tunnel
+# Creates the required service file for the selected tunnel and saves it the specific service path
+# TODO: Rework the reality service to use reality as name not xray (this makes some confusion later on)
 createService() {
-
+    # We create some local variables to hold tunnel specific data
+    # Hysteria 2
     local hysteria2ServicePath="/etc/systemd/system/hysteria2.service"
     local hysteria2serviceDescription="sing-box service"
     local hysteriaCapabilityBoundingSet="CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH"
     local hysteriaAmbientCapabilities="CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH"
     local hysteriaExecStart="/home/$newAccUsername/hysteria2/sing-box -D /home/$newAccUsername/hysteria2/ run -c /home/$newAccUsername/hysteria2/config.json"
     local hysteriaLimitNOFILE="infinity"
-
+    # Reality
     local realityServicePath="/etc/systemd/system/xray.service"
     local realityServiceDescription="XTLS Xray-Core a VMESS/VLESS Server"
     local realityCapabilityBoundingSet="CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
     local realityAmbientCapabilities="CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
     local realityExecStart="/home/$newAccUsername/xray/xray run -config /home/$newAccUsername/xray/config.json"
     local realityLimitNOFILE="1000000"
-
+    # We determine the selected tunneling method and set service variables accordingly
     case $tunnelingMethod in
         hysteria2)
             local servicePath=$hysteria2ServicePath
@@ -224,14 +219,13 @@ createService() {
             local serviceLimitNOFILE=$realityLimitNOFILE
             ;;
         esac
-
 	echo "========================================================================="
 	echo "|                      Creating $serviceName service                     "
 	echo "========================================================================="
-
-	# We create a service file
+	# We create a service file using preset variables
 	sudo echo "[Unit]" > $servicePath
 	sudo echo "Description=$serviceDescription" >> $servicePath
+    # Hysteria 2 Documentation
     if [ $tunnelingMethod == hysteria2 ]; then
 	    sudo echo "Documentation=https://sing-box.sagernet.org" >> $servicePath
         fi
@@ -241,22 +235,27 @@ createService() {
 	sudo echo "Group=$newAccUsername" >> $servicePath
 	sudo echo "CapabilityBoundingSet=$serviceCapabilityBoundingSet" >> $servicePath
 	sudo echo "AmbientCapabilities=$serviceAmbientCapabilities" >> $servicePath
-    if [ "$1" == reality ]; then
+    # Reality NoNewPrivileges
+    if [ $tunnelingMethod == reality ]; then
         sudo echo "NoNewPrivileges=true" >> $servicePath
         fi
 	sudo echo "ExecStart=$serviceExecStart" >> $servicePath
-    if [ "$1" == hysteria2 ]; then
+    # Hysteria 2 ExecReload
+    if [ $tunnelingMethod == hysteria2 ]; then
 	    sudo echo "ExecReload=/bin/kill -HUP \$MAINPID" >> $servicePath
         fi
 	sudo echo "Restart=on-failure" >> $servicePath
-    if [ "$1" == reality ]; then
+    # Reality RestartPreventExitStatus and StandardOutput 
+    if [ $tunnelingMethod == reality ]; then
         sudo echo "RestartPreventExitStatus=23" >> $servicePath
         sudo echo "StandardOutput=journal" >> $servicePath
         fi
-    if [ "$1" == hysteria2 ]; then
+    # Hysteria 2 RestartSec
+    if [ $tunnelingMethod == hysteria2 ]; then
 	    sudo echo "RestartSec=10s" >> $servicePath
         fi
-    if [ "$1" == reality ]; then
+    # Reality LimitNPROC
+    if [ $tunnelingMethod == reality ]; then
         sudo echo "LimitNPROC=100000" >> $servicePath
         fi
 	sudo echo "LimitNOFILE=$serviceLimitNOFILE" >> $servicePath
