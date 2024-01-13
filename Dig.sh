@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.3.8"
+scriptVersion="0.4.1"
 
 generateRandom() {
     case "$1" in
@@ -310,31 +310,70 @@ getHardwareArch() {
                     ;;
                     esac
             ;;
+        armv6l)
+            case "$1" in
+                hysteria2)
+	                echo "This architecture is NOT Supported by Sing-Box. exiting ..."
+	                exit
+                    ;;
+                xray)
+                    hwarch="arm32-v6"
+                    ;;
+                    esac
+            ;;
+        ppc64)
+            case "$1" in
+                hysteria2)
+	                echo "This architecture is NOT Supported by Sing-Box. exiting ..."
+	                exit
+                    ;;
+                xray)
+                    hwarch="ppc64"
+                    ;;
+                    esac
+            ;;
         s390x)
             hwarch="s390x"
             ;;
 	    *)
 	        echo "This architecture is NOT Supported by this script. exiting ..."
-	        exit ;;
+	        exit
+            ;;
 	    esac
 
     echo $hwarch
+    }
+
+createSSLCertificateKeyPairs() {
+    # We create certificate keys
+	openssl ecparam -genkey -name prime256v1 -out ca.key
+	# We check wether user has provided custom common name for SSL certificate
+	# If not, we will use default
+	if [ ! -v sslcn ]; then
+		sslcn="google-analytics.com"
+	    fi
+	openssl req -new -x509 -days 36500 -key ca.key -out ca.crt -subj "/CN=$sslcn"
     }
 
 downloadFiles() {
     local hardwareArch=$(getHardwareArch $1)
 
     local singBoxUrl="https://github.com/SagerNet/sing-box/releases/download/v$latestSingBoxVersion/sing-box-$latestSingBoxVersion-linux-$hardwareArch.tar.gz"
+    local singBoxPackageName="sing-box-$latestSingBoxVersion-linux-$hardwareArch.tar.gz"
+
     local xrayUrl="https://github.com/XTLS/Xray-core/releases/download/v$latestXrayVersion/Xray-linux-$hardwareArch.zip"
+    local xrayPackageName="Xray-linux-$hardwareArch.zip"
 
     case "$1" in
         hysteria2)
             local protocolName="Hysteria 2"
             local packageUrl=$singBoxUrl
+            local packageName=$singBoxPackageName
             ;;
         xray)
             local protocolName="Xray"
             local packageUrl=$xrayUrl
+            local packageName=$xrayPackageName
             ;;
             esac
 
@@ -342,7 +381,7 @@ downloadFiles() {
 	echo "|               Downloading $protocolName and required files                 |"
 	echo "========================================================================="
 
-	# We create directory to hold Hysteria files
+	# We create directory to hold files
 	# If it does exist, we must delete it and make a new one to avoid conflicts
 	if [ -d "/$1" ]; then
 		sudo rm -r /$1
@@ -355,20 +394,23 @@ downloadFiles() {
 	# We download the latest suitable package for current machine
 	wget $packageUrl
 
-	# We extract the package
-	tar -xzf sing-box-$latestSingBoxVersion-linux-$hwarch.tar.gz --strip-components=1 sing-box-$latestSingBoxVersion-linux-$hwarch/sing-box
+    # If we running Xray, we also download geoasset file
+    if [ $1 == xray ]; then
+        wget https://github.com/bootmortis/iran-hosted-domains/releases/latest/download/iran.dat
+        fi
+
+    # We extract the package
+    case "$1" in
+        hysteria2)
+            tar -xzf $packageName --strip-components=1 sing-box-$latestSingBoxVersion-linux-$hwarch/sing-box
+            ;;
+        xray)
+            unzip $packageName
+            ;;
+            esac
 
 	# We remove downloaded file
-	sudo rm sing-box-$latestSingBoxVersion-linux-$hwarch.tar.gz
-
-	# We create certificate keys
-	openssl ecparam -genkey -name prime256v1 -out ca.key
-	# We check wether user has provided custom common name for SSL certificate
-	# If not, we will use default
-	if [ ! -v sslcn ]; then
-		sslcn="google-analytics.com"
-	    fi
-	openssl req -new -x509 -days 36500 -key ca.key -out ca.crt -subj "/CN=$sslcn"
+	sudo rm $packageName
     }
 
 configureSingBox() {
@@ -391,7 +433,7 @@ configureSingBox() {
         fi
 
     # We store path of 'config.json' file
-    configfile=/home/$tempNewAccUsername/hysteria2/config.json
+    local configfile=/home/$tempNewAccUsername/hysteria2/config.json
 
     # We create 'config.json' file
     cat > $configfile << EOL
@@ -2468,12 +2510,51 @@ configureSingBox() {
 EOL
 }
 
+configureXray() {
+    echo "========================================================================="
+    echo "|                         Configuring xray                              |"
+    echo "========================================================================="
+    
+    # We generate a random uuid
+    randomUUID=$(./xray uuid -i $(generateRandom password))
+
+    # We generate public and private keys and temporarily save them
+    local temp=$(./xray x25519)
+
+    # We extract private key
+    local temp2="${temp#Private key: }"
+    xrayPrivateKey=`echo "${temp2}" | head -1`
+
+    # We extract the public key
+    local temp3="${temp2#$privatekey}"
+    xrayPublicKey="${temp3#*Public key: }"
+
+    # We generate a short id
+    shortId=$(openssl rand -hex 8)
+
+    # We restart the service and enable auto-start
+    sudo systemctl daemon-reload && sudo systemctl enable xray
+
+    # We store the path of the 'config.json' file
+    local configfile=/home/$tempNewAccUsername/xray/config.json
+
+    ### CONFIG_FILE
+    }
+
 startHysteria() {
     echo "========================================================================="
     echo "|                         Starting Hysteria                             |"
     echo "========================================================================="
     # We now start Hysteria service
     sudo systemctl start hysteria2 && sudo systemctl status hysteria2
+    }
+
+startXray() {
+    echo "========================================================================="
+    echo "|                           Starting xray                               |"
+    echo "========================================================================="
+    # We now start xray service
+    sudo systemctl start xray && sudo systemctl status xray
     }
 
 showConnectionInformation() {
@@ -2491,18 +2572,45 @@ showConnectionInformation() {
 
     # We show connection information
     echo ""
-    echo "NAME : $serverName"
+    case "$1" in
+        hysteria2)
+            echo "NAME : $serverName"
+            ;;
+        reality)
+            echo "REMARKS : $serverName"
+            ;;
+            esac
     echo "ADDRESS : $serverIp"
     echo "PORT : $tunnelPort"
-    echo "OBFUSCATION PASSWORD : $h2ObfsPass"
-    echo "AUTHENTICATION PASSWORD : $h2UserPass"
-    echo "ALLOW INSECURE : TRUE"
+    case "$1" in
+        hysteria2)
+            echo "OBFUSCATION PASSWORD : $h2ObfsPass"
+            echo "AUTHENTICATION PASSWORD : $h2UserPass"
+            echo "ALLOW INSECURE : TRUE"
+            ;;
+        reality)
+            echo "REMARKS : $serverName"
+            echo "ID: $randomUUID"
+            echo "FLOW: xtls-rprx-vision"
+            echo "ENCRYPTION: none"
+            echo "NETWORK: TCP"
+            echo "HEAD TYPE: none"
+            echo "TLS: reality"
+            echo "SNI: www.google-analytics.com"
+            echo "FINGERPRINT: randomized"
+            echo "PUBLIC KEY: $xrayPublicKey"
+            echo "SHORT ID: $shortId"
+            ;;
+            esac
     echo "=========="
+    if [ $1 == reality ]; then
+        echo "PRIVATE KEY : $xrayPrivateKey"
+        fi
     echo "LOCAL USERNAME : $tempNewAccUsername"
     echo "LOCAL PASSWORD : $tempNewAccPassword"
     echo ""
     echo "Write down the LOCAL USERNAME & LOCAL PASSWORD"
-    echo "you may need it for updating Sing-Box later"
+    echo "you may need it for updating later"
     echo "Usage of country-based routing is highly advised!"
     }
 
@@ -2510,8 +2618,16 @@ showQrCode() {
     echo "========================================================================="
     echo "|                               QRCODE                                  |"
     echo "========================================================================="
-    serverConfig="hy2://$h2UserPass@$serverIp:$tunnelPort/?insecure=1&obfs=salamander&obfs-password=$h2ObfsPass#$serverName"
 
+    case "$1" in
+        hysteria2)
+            local serverConfig="hy2://$h2UserPass@$serverIp:$tunnelPort/?insecure=1&obfs=salamander&obfs-password=$h2ObfsPass#$serverName"
+            ;;
+        reality)
+            local serverConfig="vless://$randomUUID@$serverIp:$tunnelPort?security=reality&encryption=none&pbk=$xrayPublicKey&headerType=none&fp=randomized&type=tcp&flow=xtls-rprx-vision&sni=www.google-analytics.com&sid=$shortId#$serverName"
+            ;;
+        esac
+    
     # We output a qrcode to ease connection
     qrencode -t ansiutf8 $serverConfig
     }
@@ -2565,16 +2681,18 @@ installHysteria() {
 
 	downloadFiles hysteria2
 
+    createSSLCertificateKeyPairs
+
 	configureSingBox
 
     startHysteria
 
     if [ ! -v disableConnectionInformation ]; then
-        showConnectionInformation
+        showConnectionInformation hysteria2
         fi
 
     if [ ! -v disableQrCode ]; then
-        showQrCode
+        showQrCode hysteria2
         fi
     }
 
@@ -2613,6 +2731,18 @@ installReality() {
     switchUser reality
 
     downloadFiles xray
+
+    configureXray
+
+    startXray
+
+    if [ ! -v disableConnectionInformation ]; then
+        showConnectionInformation reality
+        fi
+
+    if [ ! -v disableQrCode ]; then
+        showQrCode reality
+        fi
     }
 
 installShadowSocks() {
