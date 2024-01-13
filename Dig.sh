@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.3.6"
+scriptVersion="0.3.7"
 
 generateRandom() {
     case "$1" in
@@ -258,16 +258,16 @@ switchUser() {
     }
 
 downloadFiles() {
-        case "$1" in
+    case "$1" in
         hysteria2)
             local protocolName="Hysteria 2"
             ;;
         xray)
             local protocolName="Xray"
             ;;
-        esac
+            esac
 
-	echo "========================================================================="
+    echo "========================================================================="
 	echo "|               Downloading $protocolName and required files                 |"
 	echo "========================================================================="
 
@@ -287,7 +287,7 @@ downloadFiles() {
     # We check if cpu supprt AVX
 	case $hwarch in 
 	    x86_64)
-	    avxsupport="$(lscpu | grep -o avx)"
+	        avxsupport="$(lscpu | grep -o avx)"
 
 	        if [ -z "$avxsupport" ];
 	            then 
@@ -297,11 +297,15 @@ downloadFiles() {
 		            echo "AVX is Supported"
 		            hwarch="amd64v3"
 	            fi
-	    ;;
+	        ;;
+        i386)
+            hwarch="386"
 	    aarch64)
 	        hwarch="arm64" ;;
 	    armv7l)
 	        hwarch="armv7" ;;
+        s390x)
+            hwarch="s390x"
 	    *)
 	        echo "This architecture is NOT Supported by this script. exiting ..."
 	        exit ;;
