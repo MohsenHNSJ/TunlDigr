@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.6.2"
+scriptVersion="0.6.3"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -170,8 +170,10 @@ saveAndTransferCredentials() {
     # We save the credentials into files to access later.
 	echo $newAccUsername > /tunlDigrTemp/tempNewAccUsername.txt
 	echo $newAccPassword > /tunlDigrTemp/tempNewAccPassword.txt
-    # We save the latest version of tunneling method.
-	echo $latestPackageVersion > /tunlDigrTemp/tempLatestPackageVersion.txt
+    # If selected tunneling method is not shadowsocks, We save the latest version of tunneling method.
+    if[ ! $tunnelingMethod=shadowsocks ]; then
+	    echo $latestPackageVersion > /tunlDigrTemp/tempLatestPackageVersion.txt
+        fi
 	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed.
 	sudo chown -R $newAccUsername /tunlDigrTemp/
     }
@@ -239,6 +241,7 @@ createService() {
     # Hysteria 2
     local hysteria2ServicePath="/etc/systemd/system/hysteria2.service"
     local hysteria2serviceDescription="sing-box service"
+    local hysteria2ServiceDocumentation="https://sing-box.sagernet.org"
     local hysteriaCapabilityBoundingSet="CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH"
     local hysteriaAmbientCapabilities="CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH"
     local hysteriaExecStart="/home/$newAccUsername/hysteria2/sing-box -D /home/$newAccUsername/hysteria2/ run -c /home/$newAccUsername/hysteria2/config.json"
@@ -250,12 +253,17 @@ createService() {
     local realityAmbientCapabilities="CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
     local realityExecStart="/home/$newAccUsername/xray/xray run -config /home/$newAccUsername/xray/config.json"
     local realityLimitNOFILE="1000000"
+    # ShadowSocks
+    local shadowsocksServicePath="/etc/systemd/system/shadowsocks-libev-server@.service"
+    local shadowsocksServiceDescription="Shadowsocks-Libev Custom Server Service"
+    local shadowsocksServiceDocumentation="man:ss-server(1)"
     # We determine the selected tunneling method and set service variables accordingly.
     case $tunnelingMethod in
         hysteria2)
             local servicePath=$hysteria2ServicePath
             local serviceName="Hysteria 2"
             local serviceDescription=$hysteria2serviceDescription
+            local serviceDocumentation=$hysteria2ServiceDocumentation
             local serviceCapabilityBoundingSet=$hysteriaCapabilityBoundingSet
             local serviceAmbientCapabilities=$hysteriaAmbientCapabilities
             local serviceExecStart=$hysteriaExecStart
@@ -270,6 +278,11 @@ createService() {
             local serviceExecStart=$realityExecStart
             local serviceLimitNOFILE=$realityLimitNOFILE
             ;;
+        shadowsocks)
+            local servicePath=$shadowsocksServicePath
+            local serviceDescription=$shadowsocksServiceDescription
+            local serviceDocumentation=$shadowsocksServiceDocumentation
+            ;;
         esac
 	echo "========================================================================="
 	echo "|                      Creating $serviceName service                     "
@@ -277,10 +290,12 @@ createService() {
 	# We create a service file using preset variables.
 	sudo echo "[Unit]" > $servicePath
 	sudo echo "Description=$serviceDescription" >> $servicePath
-    # Hysteria 2 Documentation
-    if [ $tunnelingMethod == hysteria2 ]; then
-	    sudo echo "Documentation=https://sing-box.sagernet.org" >> $servicePath
-        fi
+    # Hysteria 2 & ShadowSocks have Documentation.
+        case $tunnelingMethod in
+        hysteria2 || shadowsocks)
+            sudo echo "Documentation=$serviceDocumentation" >> $servicePath
+            ;;
+        esac
 	sudo echo "After=network.target nss-lookup.target" >> $servicePath
 	sudo echo "[Service]" >> $servicePath
 	sudo echo "User=$newAccUsername" >> $servicePath
@@ -427,7 +442,7 @@ getHardwareArch() {
     }
 
 # Creates SSL certificate key pairs.
-# Uses the supplies sslcn(-seth2sslcn) if available.
+# Uses the supplied sslcn(-seth2sslcn) if available.
 # If not, will use the default (google-analytics.com)
 createSSLCertificateKeyPairs() {
     # We create certificate keys.
