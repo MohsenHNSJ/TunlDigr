@@ -1,13 +1,13 @@
 #!/bin/bash
 
-scriptVersion="0.5.3"
+scriptVersion="0.5.4"
 
 # Generates a random variable and echos it back.
 # <<<Options
 #   username: generate and return a random short ( 6 - 10 ) username
 #   password: generate and return a random long ( 18 - 22 ) password
 generateRandom() {
-    # We read the argument supplied to the function to determine which type of random variable to generate and echo back
+    # We read the argument supplied to the function to determine which type of random variable to generate and echo back.
     case "$1" in
 	    username)
             choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
@@ -19,7 +19,7 @@ generateRandom() {
 	            } | sort -R | awk '{printf "%s",$1}')"
 			;;
         password)
-        	# We avoid adding symbols inside the password as it sometimes caused problems, therefore the password lenght is high
+        	# We avoid adding symbols inside the password as it sometimes caused problems, therefore the password lenght is high.
         	choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
 		        local randomVariable="$({ choose '123456789'
 		        choose 'abcdefghijklmnopqrstuvwxyz'
@@ -46,15 +46,15 @@ askTunnelingMethod() {
 	echo "1 - Hysteria 2"
 	echo "2 - Reality (XTLS VLESS)"
 	echo "3 - Shadowsocks (Obsolete)"
-    # We ask the user to select the desired tunneling method
-	# We limit the input character count to 1 by using (-n) argument
+    # We ask the user to select the desired tunneling method.
+	# We limit the input character count to 1 by using (-n) argument.
 	read -n 1 -p "Select tunneling method: " tunnelingMethod
-	# We validate user input and show an error if it's invalid, then loop the process until the value is valid
+	# We validate user input and show an error if it's invalid, then loop the process until the value is valid.
 	until [[ $tunnelingMethod == +([1-3]) ]]; do
 		echo
 		read -n 1 -p "Invalid input, please only input a number from 1 - 3: " tunnelingMethod
 	    done
-    # We convert the input value from user, to a string for better code readability
+    # We convert the input value from user, to a string for better code readability.
     case $tunnelingMethod in
 	    1)
 	        tunnelingMethod="hysteria2"
@@ -76,11 +76,11 @@ installPackages() {
 	echo "|       Updating repositories and installing the required packages      |"
 	echo "|              (This may take a few minutes, Please wait...)            |"
 	echo "========================================================================="
-	# We update 'apt' repository 
-	# We install/update the packages we use during the process to ensure optimal performance
+	# We update 'apt' repository.
+	# We install/update the packages we use during the process to ensure optimal performance.
 	# This installation must run without confirmation (-y)
 	sudo apt update
-    # We only install the required files for each protocol, some are general and required by all, the specific ones are at the end
+    # We only install the required files for each protocol, some are general and required by all, the specific ones are at the end.
     case $tunnelingMethod in
         hysteria2)
         sudo apt -y install wget openssl gawk sshpass ufw coreutils curl adduser sed grep util-linux qrencode haveged tar
@@ -110,14 +110,14 @@ optimizeServerSettings() {
 	echo "========================================================================="
 	echo "|                       Optimizing server settings                      |"
 	echo "========================================================================="
-	# We optimise 'sysctl.conf' file for better performance
+	# We optimise 'sysctl.conf' file for better performance.
 	sudo echo "net.ipv4.tcp_keepalive_time = 90" >> /etc/sysctl.conf
 	sudo echo "net.ipv4.ip_local_port_range = 1024 65535" >> /etc/sysctl.conf
 	sudo echo "net.ipv4.tcp_fastopen = 3" >> /etc/sysctl.conf
 	sudo echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
 	sudo echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
 	sudo echo "fs.file-max = 65535000" >> /etc/sysctl.conf
-	# We optimise 'limits.conf' file for better performance
+	# We optimise 'limits.conf' file for better performance.
 	sudo echo "* soft     nproc          655350" >> /etc/security/limits.conf
 	sudo echo "* hard     nproc          655350" >> /etc/security/limits.conf
 	sudo echo "* soft     nofile         655350" >> /etc/security/limits.conf
@@ -126,7 +126,7 @@ optimizeServerSettings() {
 	sudo echo "root hard     nproc          655350" >> /etc/security/limits.conf
 	sudo echo "root soft     nofile         655350" >> /etc/security/limits.conf
 	sudo echo "root hard     nofile         655350" >> /etc/security/limits.conf
-	# We apply the changes
+	# We apply the changes.
 	sudo sysctl -p
     }
 
@@ -135,9 +135,9 @@ saveAndTransferCredentials() {
 	echo "========================================================================="
 	echo "|                           Saving Credentials                          |"
 	echo "========================================================================="
-    # We save the new user credentials to use after switching user
-	# We first must check if it already exists or not
-	# If it does exist, we must delete it and make a new one to store new temporary data
+    # We save the new user credentials to use after switching user.
+	# We first must check if it already exists or not.
+	# If it does exist, we must delete it and make a new one to store new temporary data.
 	if [ -d "/tunlDigrTemp" ]
 	    then
 	    sudo rm -r /tunlDigrTemp
@@ -145,16 +145,16 @@ saveAndTransferCredentials() {
 	    else
 		sudo mkdir /tunlDigrTemp
 	    fi
-    # We save the credentials into files to access later
+    # We save the credentials into files to access later.
 	echo $newAccUsername > /tunlDigrTemp/tempNewAccUsername.txt
 	echo $newAccPassword > /tunlDigrTemp/tempNewAccPassword.txt
-    # We save the latest version of tunneling method
+    # We save the latest version of tunneling method.
     if [ $tunnelingMethod == hysteria2 ]; then
 	    echo $latestSingBoxVersion > /tunlDigrTemp/tempLatestSingBoxVersion.txt
     elif [ $tunnelingMethod == reality ]; then
         echo $latestXrayVersion > /tunlDigrTemp/tempLatestXrayVersion.txt
         fi
-	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed
+	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed.
 	sudo chown -R $newAccUsername /tunlDigrTemp/
     }
 
@@ -163,10 +163,10 @@ readAndRemoveCredentials() {
 	echo "========================================================================="
 	echo "|                           Reading Credentials                          |"
 	echo "========================================================================="
-	# We read the saved credentials
+	# We read the saved credentials.
 	tempNewAccUsername=$(</tunlDigrTemp/tempNewAccUsername.txt)
 	tempNewAccPassword=$(</tunlDigrTemp/tempNewAccPassword.txt)
-    # We read the latest version of tunneling method
+    # We read the latest version of tunneling method.
     if [ $tunnelingMethod == hysteria2 ]; then
 	    tempLatestSingBoxVersion=$(</tunlDigrTemp/tempLatestSingBoxVersion.txt)
         sudo rm /tunlDigrTemp/tempLatestSingBoxVersion.txt
@@ -174,55 +174,55 @@ readAndRemoveCredentials() {
         tempLatestXrayVersion=$(</tunlDigrTemp/tempLatestXrayVersion.txt)
         sudo rm /tunlDigrTemp/tempLatestXrayVersion.txt
         fi
-	# We delete senstive inforamtion
+	# We delete senstive inforamtion.
 	sudo rm /tunlDigrTemp/tempNewAccUsername.txt
 	sudo rm /tunlDigrTemp/tempNewAccPassword.txt
     }
 
-# Allows the specified port (tunnelPort) on ufw
-# If port is not provided, 443 is used by default
+# Allows the specified port (tunnelPort) on ufw.
+# If port is not provided, 443 is used by default.
 allowPortOnUfw() {
     echo "========================================================================="
 	echo "|                             Allowing Port                             |"
 	echo "========================================================================="
-	# We provide password to 'sudo' command and open protocol port 
-    # We check wether user has provided custom port and if so, we check if it's in the acceptable range (0 - 65535)
-    # If not, we will use the dafault 443
+	# We provide password to 'sudo' command and open protocol port.
+    # We check wether user has provided custom port and if so, we check if it's in the acceptable range (0 - 65535).
+    # If not, we will use the dafault 443.
     if [ ! -v tunnelPort ] || [[ $tunnelPort != +([0-9]) ]] || [ $tunnelPort -gt 65535 ]; then       
         tunnelPort=443
         fi
 	echo $tempNewAccPassword | sudo -S ufw allow $tunnelPort
     }
 
-# Creates a new user
-# Uses the supplied newAccUsername(-setusername) & newAccPassword(-setuserpass) if available
-# if not, it will randomly generate unavailable ones, using (generateRandom) function
+# Creates a new user.
+# Uses the supplied newAccUsername(-setusername) & newAccPassword(-setuserpass) if available.
+# if not, it will randomly generate unavailable ones, using (generateRandom) function.
 addNewUser() {
 	echo "========================================================================="
 	echo "|                  Adding a new user and configuring                    |"
 	echo "========================================================================="
-	# We check wether user has provided custom username
-	# If not, we will generate a random username
+	# We check wether user has provided custom username.
+	# If not, we will generate a random username.
 	if [ ! -v newAccUsername ]; then
         newAccUsername=$(generateRandom username)
 	    fi
-	# We check wether user has provided custom password
-	# If not, we will generate a random password
+	# We check wether user has provided custom password.
+	# If not, we will generate a random password.
 	if [ ! -v newAccPassword ]; then
 		newAccPassword=$(generateRandom password)
 	    fi
-	 # We create a new user
+	 # We create a new user.
 	adduser --gecos "" --disabled-password $newAccUsername
-	# We set a password for the new user
+	# We set a password for the new user.
 	chpasswd <<<"$newAccUsername:$newAccPassword"
-	# We grant root privileges to the new user
+	# We grant root privileges to the new user.
 	usermod -aG sudo $newAccUsername	
     }
 
-# Creates the required service file for the selected tunnel and saves it the specific service path
-# TODO: Rework the reality service to use reality as name not xray (this makes some confusion later on)
+# Creates the required service file for the selected tunnel and saves it the specific service path.
+# TODO: Rework the reality service to use reality as name not xray (this makes some confusion later on).
 createService() {
-    # We create some local variables to hold tunnel specific data
+    # We create some local variables to hold tunnel specific data.
     # Hysteria 2
     local hysteria2ServicePath="/etc/systemd/system/hysteria2.service"
     local hysteria2serviceDescription="sing-box service"
@@ -237,7 +237,7 @@ createService() {
     local realityAmbientCapabilities="CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
     local realityExecStart="/home/$newAccUsername/xray/xray run -config /home/$newAccUsername/xray/config.json"
     local realityLimitNOFILE="1000000"
-    # We determine the selected tunneling method and set service variables accordingly
+    # We determine the selected tunneling method and set service variables accordingly.
     case $tunnelingMethod in
         hysteria2)
             local servicePath=$hysteria2ServicePath
@@ -261,7 +261,7 @@ createService() {
 	echo "========================================================================="
 	echo "|                      Creating $serviceName service                     "
 	echo "========================================================================="
-	# We create a service file using preset variables
+	# We create a service file using preset variables.
 	sudo echo "[Unit]" > $servicePath
 	sudo echo "Description=$serviceDescription" >> $servicePath
     # Hysteria 2 Documentation
@@ -303,30 +303,33 @@ createService() {
 	sudo echo "WantedBy=multi-user.target" >> $servicePath
     }
 
-# Switches to the newly created user
+# Switches to the newly created user.
 switchUser() {
 	echo "========================================================================="
 	echo "|                           Switching user                              |"
 	echo "========================================================================="
-	# We now switch to the new user
+	# We now switch to the new user.
 	sshpass -p $newAccPassword ssh -o "StrictHostKeyChecking=no" $newAccUsername@127.0.0.1
     }
 
+# Gets the current machine's hardware architecture and translates it to appropriate string based on selected tunneling method.
+# If the tunnel does not supprt the current hardware architecture, an error message will be shown and the script will exit.
 getHardwareArch() {
-    # We check and save the hardware architecture of current machine
+    # We check and save the hardware architecture of current machine.
 	local hwarch="$(uname -m)"
-
-	case $hwarch in 
+    # We translate it to appropriate string based on each tunneling method.
+    # If the architecture is not supported by the selected tunneling method, we will show an error message and exit the script.
+	case $hwarch in
+        # x86 - 64 Bit
 	    x86_64)
-
-            case "$1" in
+            case $tunnelingMethod in
                 hysteria2)
                     # We check if cpu supprt AVX
 	                avxsupport="$(lscpu | grep -o avx)"
-
 	                if [ -z "$avxsupport" ]; then 
 		                hwarch="amd64"
 	                else
+                        # If so, we will use the package with AVX functions for faster performance
 		                hwarch="amd64v3"
 	                    fi
                     ;;
@@ -335,8 +338,9 @@ getHardwareArch() {
                     ;;
                     esac
 	        ;;
+        # x86 - 32 Bit
         i386)
-            case "$1" in
+            case $tunnelingMethod in
                 hysteria2)
                     hwarch="386"
                     ;;
@@ -345,8 +349,9 @@ getHardwareArch() {
                     ;;
                     esac
             ;;
+        # Arm - 64 Bit - V8
 	    aarch64)
-            case "$1" in
+            case $tunnelingMethod in
                 hysteria2)
                     hwarch="arm64"
                     ;;
@@ -355,8 +360,9 @@ getHardwareArch() {
                     ;;
                     esac
             ;;
+        # Arm - 32 Bit - V7
 	    armv7l)
-            case "$1" in
+            case $tunnelingMethod in
                 hysteria2)
                     hwarch="armv7"
                     ;;
@@ -365,8 +371,10 @@ getHardwareArch() {
                     ;;
                     esac
             ;;
+        # Arm - 32 Bit - V6
         armv6l)
-            case "$1" in
+            case $tunnelingMethod in
+                # Hysteria does not support armv6l, we will show an error and exit the script
                 hysteria2)
 	                echo "This architecture is NOT Supported by Sing-Box. exiting ..."
 	                exit
@@ -376,8 +384,10 @@ getHardwareArch() {
                     ;;
                     esac
             ;;
+        # PowerPC - 64 Bit
         ppc64)
-            case "$1" in
+            case $tunnelingMethod in
+                # Hysteria does not support armv6l, we will show an error and exit the script
                 hysteria2)
 	                echo "This architecture is NOT Supported by Sing-Box. exiting ..."
 	                exit
@@ -387,15 +397,19 @@ getHardwareArch() {
                     ;;
                     esac
             ;;
+        # IBM System/390
+        # Because there is no difference, we don't check anything here.
         s390x)
             hwarch="s390x"
             ;;
+        # If nothing matched, either it's not implemented yet OR the tunnels don't support such architecture.
+        # We show an error message and exit the script.
 	    *)
 	        echo "This architecture is NOT Supported by this script. exiting ..."
 	        exit
             ;;
 	    esac
-
+    # We echo back the tranlated hardware architecture.
     echo $hwarch
     }
 
@@ -411,7 +425,7 @@ createSSLCertificateKeyPairs() {
     }
 
 downloadFiles() {
-    local hardwareArch=$(getHardwareArch $1)
+    local hardwareArch=$(getHardwareArch)
 
     local singBoxUrl="https://github.com/SagerNet/sing-box/releases/download/v$latestSingBoxVersion/sing-box-$latestSingBoxVersion-linux-$hardwareArch.tar.gz"
     local singBoxPackageName="sing-box-$latestSingBoxVersion-linux-$hardwareArch.tar.gz"
