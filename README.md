@@ -9,7 +9,7 @@ Optimized for Iran
 - [Hysteria Arguments](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#hysteria-arguments)
 
 # Features:  
-- Install and run LATEST Hysteria 2 server with one command for the following architectures: `amd64` `amd64v3` `arm64` `armv7`
+- Install and run LATEST Hysteria 2 server with one command for the following architectures: `i386` `amd64` `amd64v3` `arm64` `armv7` `s390x`
 - Update required packages automatically (can be disabled)
 - Optimize server settings for best performance (can be disabled)
 - Sets up the protocol on a separate user (NOT `root`) that is randomly created (can be customized)
