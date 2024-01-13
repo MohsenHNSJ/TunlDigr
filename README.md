@@ -11,6 +11,7 @@ Optimized for Iran
 # Features:  
 - install and run LATEST Reality server with one command for the following architectures: `i386` `amd64` `arm64` `armv7` `s390x` `ppc64` `armv6l`
 - Install and run LATEST Hysteria 2 server with one command for the following architectures: `i386` `amd64` `amd64v3` `arm64` `armv7` `s390x`
+- install and run `shadowsocks-libev` using `snap`
 - Update required packages automatically (can be disabled)
 - Optimize server settings for best performance (can be disabled)
 - Sets up the protocol on a separate user (NOT `root`) that is randomly created (can be customized)
