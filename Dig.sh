@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.5.1"
+scriptVersion="0.5.2"
 
 # Generates a random variable and echos it back
 # <<<Options
@@ -173,7 +173,17 @@ readAndRemoveCredentials() {
 	# We delete senstive inforamtion
 	sudo rm /tunlDigrTemp/tempNewAccUsername.txt
 	sudo rm /tunlDigrTemp/tempNewAccPassword.txt
-}
+    }
+
+allowPortOnUfw() {
+	# We provide password to 'sudo' command and open protocol port 
+    # We check wether user has provided custom port and if so, we check if it's in the acceptable range (0 - 65535)
+    # If not, we will use the dafault 443
+    if [ ! -v tunnelPort ] || [[ $tunnelPort != +([0-9]) ]] || [ $tunnelPort -gt 65535 ]; then       
+        tunnelPort=443
+        fi
+	echo $tempNewAccPassword | sudo -S ufw allow $tunnelPort
+    }
 
 # Creates a new user
 # Uses the supplied newAccUsername(-setusername) & newAccPassword(-setuserpass) if available
@@ -291,16 +301,6 @@ switchUser() {
 	echo "========================================================================="
 	# We now switch to the new user
 	sshpass -p $newAccPassword ssh -o "StrictHostKeyChecking=no" $newAccUsername@127.0.0.1
-
-    readAndRemoveCredentials
-
-	# We provide password to 'sudo' command and open protocol port 
-    # We check wether user has provided custom port and if so, we check if it's in the acceptable range (0 - 65535)
-    # If not, we will use the dafault 443
-    if [ ! -v tunnelPort ] || [[ $tunnelPort != +([0-9]) ]] || [ $tunnelPort -gt 65535 ]; then       
-        tunnelPort=443
-        fi
-	echo $tempNewAccPassword | sudo -S ufw allow $tunnelPort
     }
 
 getHardwareArch() {
@@ -4754,6 +4754,10 @@ installHysteria() {
 
 	switchUser
 
+    readAndRemoveCredentials
+
+    allowPortOnUfw
+
 	downloadFiles hysteria2
 
     createSSLCertificateKeyPairs
@@ -4806,6 +4810,10 @@ installReality() {
     createService
 
     switchUser
+
+    readAndRemoveCredentials
+
+    allowPortOnUfw
 
     downloadFiles xray
 
