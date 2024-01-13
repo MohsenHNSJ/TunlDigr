@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.3.7"
+scriptVersion="0.3.8"
 
 generateRandom() {
     case "$1" in
@@ -257,13 +257,84 @@ switchUser() {
 	echo $tempNewAccPassword | sudo -S ufw allow $tunnelPort
     }
 
+getHardwareArch() {
+    # We check and save the hardware architecture of current machine
+	local hwarch="$(uname -m)"
+
+	case $hwarch in 
+	    x86_64)
+
+            case "$1" in
+                hysteria2)
+                    # We check if cpu supprt AVX
+	                avxsupport="$(lscpu | grep -o avx)"
+
+	                if [ -z "$avxsupport" ]; then 
+		                hwarch="amd64"
+	                else
+		                hwarch="amd64v3"
+	                    fi
+                    ;;
+                xray)
+                    hwarch="64"
+                    ;;
+                    esac
+	        ;;
+        i386)
+            case "$1" in
+                hysteria2)
+                    hwarch="386"
+                    ;;
+                xray)
+                    hwarch="32"
+                    ;;
+                    esac
+            ;;
+	    aarch64)
+            case "$1" in
+                hysteria2)
+                    hwarch="arm64"
+                    ;;
+                xray)
+                    hwarch="arm64-v8a"
+                    ;;
+                    esac
+            ;;
+	    armv7l)
+            case "$1" in
+                hysteria2)
+                    hwarch="armv7"
+                    ;;
+                xray)
+                    hwarch="arm32-v7a"
+                    ;;
+                    esac
+            ;;
+        s390x)
+            hwarch="s390x"
+            ;;
+	    *)
+	        echo "This architecture is NOT Supported by this script. exiting ..."
+	        exit ;;
+	    esac
+
+    echo $hwarch
+    }
+
 downloadFiles() {
+    local hardwareArch=$(getHardwareArch $1)
+
+    local singBoxUrl="https://github.com/SagerNet/sing-box/releases/download/v$latestSingBoxVersion/sing-box-$latestSingBoxVersion-linux-$hardwareArch.tar.gz"
+    local xrayUrl="https://github.com/XTLS/Xray-core/releases/download/v$latestXrayVersion/Xray-linux-$hardwareArch.zip"
+
     case "$1" in
         hysteria2)
             local protocolName="Hysteria 2"
+            local packageUrl=$singBoxUrl
             ;;
         xray)
             local protocolName="Xray"
+            local packageUrl=$xrayUrl
             ;;
             esac
 
@@ -281,38 +352,8 @@ downloadFiles() {
 	# We navigate to directory we created
 	cd $1/
 
-	# We check and save the hardware architecture of current machine
-	hwarch="$(uname -m)"
-
-    # We check if cpu supprt AVX
-	case $hwarch in 
-	    x86_64)
-	        avxsupport="$(lscpu | grep -o avx)"
-
-	        if [ -z "$avxsupport" ];
-	            then 
-		            echo "AVX is NOT supported"
-		            hwarch="amd64"
-	            else
-		            echo "AVX is Supported"
-		            hwarch="amd64v3"
-	            fi
-	        ;;
-        i386)
-            hwarch="386"
-	    aarch64)
-	        hwarch="arm64" ;;
-	    armv7l)
-	        hwarch="armv7" ;;
-        s390x)
-            hwarch="s390x"
-	    *)
-	        echo "This architecture is NOT Supported by this script. exiting ..."
-	        exit ;;
-	    esac
-
 	# We download the latest suitable package for current machine
-	wget https://github.com/SagerNet/sing-box/releases/download/v$latestSingBoxVersion/sing-box-$latestSingBoxVersion-linux-$hwarch.tar.gz
+	wget $packageUrl
 
 	# We extract the package
 	tar -xzf sing-box-$latestSingBoxVersion-linux-$hwarch.tar.gz --strip-components=1 sing-box-$latestSingBoxVersion-linux-$hwarch/sing-box
