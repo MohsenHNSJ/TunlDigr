@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.5.0"
+scriptVersion="0.5.1"
 
 # Generates a random variable and echos it back
 # <<<Options
@@ -132,6 +132,9 @@ optimizeServerSettings() {
 
 # Saves the new user's name and password as well as the latest version of selected tunneling method to be used after switching to the new user
 saveAndTransferCredentials() {
+	echo "========================================================================="
+	echo "|                           Saving Credentials                          |"
+	echo "========================================================================="
     # We save the new user credentials to use after switching user
 	# We first must check if it already exists or not
 	# If it does exist, we must delete it and make a new one to store new temporary data
@@ -145,7 +148,7 @@ saveAndTransferCredentials() {
     # We save the credentials into files to access later
 	echo $newAccUsername > /tunlDigrTemp/tempNewAccUsername.txt
 	echo $newAccPassword > /tunlDigrTemp/tempNewAccPassword.txt
-    # We save the latest version of the tunneling method
+    # We save the latest version of tunneling method
     if [ $tunnelingMethod == hysteria2 ]; then
 	    echo $latestSingBoxVersion > /tunlDigrTemp/tempLatestSingBoxVersion.txt
     elif [ $tunnelingMethod == reality ]; then
@@ -154,6 +157,23 @@ saveAndTransferCredentials() {
 	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed
 	sudo chown -R $newAccUsername /tunlDigrTemp/
     }
+
+readAndRemoveCredentials() {
+	# We read the saved credentials
+	tempNewAccUsername=$(</tunlDigrTemp/tempNewAccUsername.txt)
+	tempNewAccPassword=$(</tunlDigrTemp/tempNewAccPassword.txt)
+    # We read the latest version of tunneling method
+    if [ $tunnelingMethod == hysteria2 ]; then
+	    tempLatestSingBoxVersion=$(</tunlDigrTemp/tempLatestSingBoxVersion.txt)
+        sudo rm /tunlDigrTemp/tempLatestSingBoxVersion.txt
+    elif [ $tunnelingMethod == reality ]; then
+        tempLatestXrayVersion=$(</tunlDigrTemp/tempLatestXrayVersion.txt)
+        sudo rm /tunlDigrTemp/tempLatestXrayVersion.txt
+        fi
+	# We delete senstive inforamtion
+	sudo rm /tunlDigrTemp/tempNewAccUsername.txt
+	sudo rm /tunlDigrTemp/tempNewAccPassword.txt
+}
 
 # Creates a new user
 # Uses the supplied newAccUsername(-setusername) & newAccPassword(-setuserpass) if available
@@ -264,6 +284,7 @@ createService() {
 	sudo echo "WantedBy=multi-user.target" >> $servicePath
     }
 
+# Switches to the newly created user
 switchUser() {
 	echo "========================================================================="
 	echo "|                           Switching user                              |"
@@ -271,20 +292,7 @@ switchUser() {
 	# We now switch to the new user
 	sshpass -p $newAccPassword ssh -o "StrictHostKeyChecking=no" $newAccUsername@127.0.0.1
 
-	# We read the saved credentials
-	tempNewAccUsername=$(</tunlDigrTemp/tempNewAccUsername.txt)
-	tempNewAccPassword=$(</tunlDigrTemp/tempNewAccPassword.txt)
-    if [ "$1" == hysteria2 ]; then
-	    tempLatestSingBoxVersion=$(</tunlDigrTemp/tempLatestSingBoxVersion.txt)
-        sudo rm /tunlDigrTemp/tempLatestSingBoxVersion.txt
-    elif [ "$1" == reality ]; then
-        tempLatestXrayVersion=$(</tunlDigrTemp/tempLatestXrayVersion.txt)
-        sudo rm /tunlDigrTemp/tempLatestXrayVersion.txt
-        fi
-
-	# We delete senstive inforamtion
-	sudo rm /tunlDigrTemp/tempNewAccUsername.txt
-	sudo rm /tunlDigrTemp/tempNewAccPassword.txt
+    readAndRemoveCredentials
 
 	# We provide password to 'sudo' command and open protocol port 
     # We check wether user has provided custom port and if so, we check if it's in the acceptable range (0 - 65535)
@@ -4744,7 +4752,7 @@ installHysteria() {
 
 	createService
 
-	switchUser hysteria2
+	switchUser
 
 	downloadFiles hysteria2
 
@@ -4797,7 +4805,7 @@ installReality() {
 
     createService
 
-    switchUser reality
+    switchUser
 
     downloadFiles xray
 
