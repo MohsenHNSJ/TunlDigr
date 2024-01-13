@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.5.6"
+scriptVersion="0.5.7"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -4656,22 +4656,23 @@ startService() {
     sudo systemctl start $serviceName && sudo systemctl status $serviceName
     }
 
+# Shows the information and credentials for connecting to the tunnel.
+# Can be disabled by -dconinfo
 showConnectionInformation() {
     echo "========================================================================="
     echo "|                                DONE                                   |"
     echo "========================================================================="
-    # We get server ip
+    # We get server IP.
     serverIp=$(hostname -I | awk '{ print $1}')
-
-    # We check wether user has provided custom server name
-	# If not, we will use hostname as server name
+    # We check wether user has provided custom server name or not.
+	# If not, we will use hostname as server name.
     if [ ! -v serverName ]; then
         serverName=$('hostname')
         fi
-
-    # We show connection information
-    echo ""
-    case "$1" in
+    # We show connection information.
+    echo 
+    # We determine the selected tunneling method and set fields accordingly.
+    case $tunnelingMethod in
         hysteria2)
             echo "NAME : $serverName"
             ;;
@@ -4681,7 +4682,8 @@ showConnectionInformation() {
             esac
     echo "ADDRESS : $serverIp"
     echo "PORT : $tunnelPort"
-    case "$1" in
+    # We determine the selected tunneling method and set fields accordingly.
+    case $tunnelingMethod in
         hysteria2)
             echo "OBFUSCATION PASSWORD : $h2ObfsPass"
             echo "AUTHENTICATION PASSWORD : $h2UserPass"
@@ -4702,32 +4704,34 @@ showConnectionInformation() {
             ;;
             esac
     echo "=========="
-    if [ $1 == reality ]; then
+    # Reality Private Key
+    if [ $tunnelingMethod == reality ]; then
         echo "PRIVATE KEY : $xrayPrivateKey"
         fi
     echo "LOCAL USERNAME : $tempNewAccUsername"
     echo "LOCAL PASSWORD : $tempNewAccPassword"
-    echo ""
+    echo 
     echo "Write down the LOCAL USERNAME & LOCAL PASSWORD"
     echo "you may need it for updating later"
     echo "Usage of country-based routing is highly advised!"
     }
 
+# Shows the QR Code for easier access to the tunnel.
+# Can be disabled by -dqrcode
 showQrCode() {
     echo "========================================================================="
     echo "|                               QRCODE                                  |"
     echo "========================================================================="
-
-    case "$1" in
+    # We determine the selected tunneling method and generate config accordingly.
+    case $tunnelingMethod in
         hysteria2)
             local serverConfig="hy2://$h2UserPass@$serverIp:$tunnelPort/?insecure=1&obfs=salamander&obfs-password=$h2ObfsPass#$serverName"
             ;;
         reality)
             local serverConfig="vless://$randomUUID@$serverIp:$tunnelPort?security=reality&encryption=none&pbk=$xrayPublicKey&headerType=none&fp=randomized&type=tcp&flow=xtls-rprx-vision&sni=www.google-analytics.com&sid=$shortId#$serverName"
             ;;
-        esac
-    
-    # We output a qrcode to ease connection
+        esac  
+    # We output a qrcode to ease connection.
     qrencode -t ansiutf8 $serverConfig
     }
 
@@ -4793,11 +4797,11 @@ installHysteria() {
     startService
 
     if [ ! -v disableConnectionInformation ]; then
-        showConnectionInformation hysteria2
+        showConnectionInformation
         fi
 
     if [ ! -v disableQrCode ]; then
-        showQrCode hysteria2
+        showQrCode
         fi
     }
 
@@ -4848,11 +4852,11 @@ installReality() {
     startService
 
     if [ ! -v disableConnectionInformation ]; then
-        showConnectionInformation reality
+        showConnectionInformation
         fi
 
     if [ ! -v disableQrCode ]; then
-        showQrCode reality
+        showQrCode
         fi
     }
 
