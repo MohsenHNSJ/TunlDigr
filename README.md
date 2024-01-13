@@ -9,6 +9,7 @@ Optimized for Iran
 - [Hysteria Arguments](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#hysteria-arguments)
 
 # Features:  
+- install and run LATEST Reality server with one command for the following architectures: `i386` `amd64` `arm64` `armv7` `s390x`
 - Install and run LATEST Hysteria 2 server with one command for the following architectures: `i386` `amd64` `amd64v3` `arm64` `armv7` `s390x`
 - Update required packages automatically (can be disabled)
 - Optimize server settings for best performance (can be disabled)
