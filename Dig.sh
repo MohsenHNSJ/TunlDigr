@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.4.4"
+scriptVersion="0.4.5"
 
 # Generates a random variable and echos it back
 # <<<Options
@@ -34,6 +34,7 @@ generateRandom() {
     }
 
 # Asks the user to select a tunneling method by entering a numeric value from 1 to 3
+# Can be skipped by -tm and specifing a method in the argument
 # Checks input for validity and if it's a valid, it will convert it to a string and save it in (tunnelingMethod) variable
 # Current available tunnels: (1) Hysteria 2, (2) Reality, (3) ShadowSocks
 askTunnelingMethod() {
@@ -68,6 +69,7 @@ askTunnelingMethod() {
     }
 
 # Installs the required packages for specified tunneling method
+# Can be disabled by -dpakup
 # <<<Options
 #   hysteria2: Installs the packages needed for setting up Hysteria 2 tunnel 
 #   reality: Installs the packages needed for setting up Reality tunnel
@@ -91,6 +93,8 @@ installPackages() {
         esac
     }
 
+# Shows a startup message and version of the script 
+# can be disabled by -dstartmsg
 showStartupMessage() {
 	echo "========================================================================="
 	echo "|                    TunlDigr by @MohsenHNSJ (Github)                   |"
@@ -4840,6 +4844,9 @@ while [ ! -z "$1" ]; do
         -dqrcode)
             disableQrCode=1
             ;;
+        -dstartmsg)
+            disableStartupMessage=1
+            ;;
 		# Set custom username for new account (default: random)
 		-setusername)
 			newAccUsername=$2
@@ -4872,7 +4879,9 @@ while [ ! -z "$1" ]; do
     shift
     done
 
-showStartupMessage
+if [ ! -v disableStartupMessage ]; then
+    showStartupMessage
+    fi
 
 # We check wether the tunneling method is supplied at execution or not
 # If not, we will ask for it
