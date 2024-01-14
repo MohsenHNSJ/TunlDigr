@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.6.8"
+scriptVersion="0.6.9"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -2657,8 +2657,11 @@ configureXray() {
     echo "|                         Configuring xray                              |"
     echo "========================================================================="
     
-    # We generate a random uuid
-    randomUUID=$(./xray uuid -i $(generateRandom password))
+    # We check wether user has provided custom UUID or not.
+	# If not, we will generate a random UUID for reality.
+	if [ ! -v xrUUID ]; then
+        xrUUID=$(./xray uuid -i $(generateRandom password))
+        fi
 
     # We generate public and private keys and temporarily save them
     local temp=$(./xray x25519)
@@ -2701,7 +2704,7 @@ configureXray() {
              "settings":{
                 "clients":[
                    {
-                      "id":"$randomUUID",
+                      "id":"$xrUUID",
                       "flow":"xtls-rprx-vision"
                    }
                 ],
@@ -4794,7 +4797,7 @@ showConnectionInformation() {
             echo "ALLOW INSECURE: TRUE"
             ;;
         reality)
-            echo "ID: $randomUUID"
+            echo "ID: $xrUUID"
             echo "FLOW: xtls-rprx-vision"
             echo "ENCRYPTION: none"
             echo "NETWORK: TCP"
@@ -4835,7 +4838,7 @@ showQrCode() {
             local serverConfig="hy2://$h2UserPass@$serverIp:$tunnelPort/?insecure=1&obfs=salamander&obfs-password=$h2ObfsPass#$serverName"
             ;;
         reality)
-            local serverConfig="vless://$randomUUID@$serverIp:$tunnelPort?security=reality&encryption=none&pbk=$xrayPublicKey&headerType=none&fp=randomized&type=tcp&flow=xtls-rprx-vision&sni=www.google-analytics.com&sid=$shortId#$serverName"
+            local serverConfig="vless://$xrUUID@$serverIp:$tunnelPort?security=reality&encryption=none&pbk=$xrayPublicKey&headerType=none&fp=randomized&type=tcp&flow=xtls-rprx-vision&sni=www.google-analytics.com&sid=$shortId#$serverName"
             ;;
         shadowsocks)
             local encodedSegment=$(openssl base64 <<< "chacha20-ietf-poly1305:$ssPassword")
@@ -5014,6 +5017,11 @@ while [ ! -z "$1" ]; do
         # Set custom password for hysteria 2 protocol authentication password.
         -seth2userpass)
             h2UserPass=$2
+            ;;
+        # Reality
+        # Set custom UUID for reality protocol.
+        -setxruuid)
+            xrUUID=$2
             ;;
         # ShadowSocks
         # Forces snap to use edge channel for shadowsocks-libev package.
