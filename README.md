@@ -7,6 +7,7 @@ Optimized for Iran
 - [Usage](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#usage)
 - [General Arguments](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#general-arguments)
 - [Hysteria Arguments](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#hysteria-arguments)
+- [Reality Arguments](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#reality-arguments)
 - [ShadowSocks Arguments](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#shadowsocks-arguments)
 
 # Features:  
@@ -91,10 +92,15 @@ default: `google-analytics.com`
 you can set custom password for hysteria obfs (salamander).  
 default is random  
 
-### `-seth2userpass` (set custom password for hysteria 2 protocol):  
+### `-seth2userpass` (set custom password):  
 you can set custom password for authentication to hysteria 2 protocol.  
 default is random  
  
+---
+
+## Reality Arguments
+### `-setxruuid` (set custom uuid):  
+you can set custom UUID for reality protocol.  
 
 ---
 
