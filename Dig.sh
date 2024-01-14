@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.6.7"
+scriptVersion="0.6.8"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -45,7 +45,7 @@ askTunnelingMethod() {
 	echo "========================================================================="
 	echo "1 - Hysteria 2 (Sing-Box)"
 	echo "2 - Reality (XTLS VLESS)"
-	echo "3 - Shadowsocks (Shadowsocks-llibev, Obsolete)"
+	echo "3 - Shadowsocks-libev (Obsolete)"
     # We ask the user to select the desired tunneling method.
 	# We limit the input character count to 1 by using (-n) argument.
 	read -n 1 -p "Select tunneling method: " tunnelingMethod
@@ -4710,6 +4710,7 @@ configureXray() {
 EOL
 }
 
+# Creates a config file for ShadowSocks-libev
 configureShadowsocks() {
     # We create some local variables to hold tunnel specific data.
     local configDirectoryPath="/var/snap/shadowsocks-libev/common/etc/shadowsocks-libev"
@@ -4717,16 +4718,12 @@ configureShadowsocks() {
     echo "========================================================================="
     echo "|                     Configuring ShadowSocks                           |"
     echo "========================================================================="
-
     # We will create the directory path for config file.
     sudo mkdir -p $configDirectoryPath
-
     # We create an empty config file.
     sudo touch $configFilePath
-
     # We generate a password for ShadowSocks authentication
     ssPassword=$(generateRandom password)
-
     # Configure ShadowSocks config file
     sudo echo "{" > $configFilePath
     sudo echo "    \"server\":[\"[::0]\", \"0.0.0.0\"]," >> $configFilePath
