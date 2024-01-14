@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.6.9"
+scriptVersion="0.7.0"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -2658,29 +2658,35 @@ configureXray() {
     echo "========================================================================="
     
     # We check wether user has provided custom UUID or not.
-	# If not, we will generate a random UUID for reality.
-	if [ ! -v xrUUID ]; then
-        xrUUID=$(./xray uuid -i $(generateRandom password))
+	# If not, we will generate a random UUID.
+	if [ ! -v realityUUID ]; then
+        realityUUID=$(./xray uuid -i $(generateRandom password))
         fi
 
-    # We generate public and private keys and temporarily save them
-    local temp=$(./xray x25519)
+    # We check wether user has provided custom public & private key or not.
+    # If one or both of them are missing, generate a new public and private key.
+    if [ ! -v $realityPrivateKey || ! -v $realityPublicKey ]; then
+        # We generate public and private keys and temporarily save them.
+        local temp=$(./xray x25519)
+        # We extract private key
+        local temp2="${temp#Private key: }"
+        realityPrivateKey=`echo "${temp2}" | head -1`
+        # We extract the public key
+        local temp3="${temp2#$privatekey}"
+        realityPublicKey="${temp3#*Public key: }"
+        fi
 
-    # We extract private key
-    local temp2="${temp#Private key: }"
-    xrayPrivateKey=`echo "${temp2}" | head -1`
+    # We check wether user has provided custom short ID or not.
+    # If not, we will generate a random short ID.
+    if [ ! -v $realityShortID ]; then
+        # We generate a short id.
+        realityShortID=$(openssl rand -hex 8)
+        fi
 
-    # We extract the public key
-    local temp3="${temp2#$privatekey}"
-    xrayPublicKey="${temp3#*Public key: }"
-
-    # We generate a short id
-    shortId=$(openssl rand -hex 8)
-
-    # We restart the service and enable auto-start
+    # We restart the service and enable auto-start.
     sudo systemctl daemon-reload && sudo systemctl enable xray
 
-    # We store the path of the 'config.json' file
+    # We store the path of the 'config.json' file.
     local configfile=/home/$tempNewAccUsername/xray/config.json
 
     cat > $configfile << EOL
@@ -2704,7 +2710,7 @@ configureXray() {
              "settings":{
                 "clients":[
                    {
-                      "id":"$xrUUID",
+                      "id":"$realityUUID",
                       "flow":"xtls-rprx-vision"
                    }
                 ],
@@ -2720,12 +2726,12 @@ configureXray() {
                    "serverNames":[
                       "www.google-analytics.com"
                    ],
-                   "privateKey":"$xrayPrivateKey",
+                   "privateKey":"$realityPrivateKey",
                    "minClientVer":"1.8.0",
                    "maxClientVer":"",
                    "maxTimeDiff":0,
                    "shortIds":[
-                      "$shortId"
+                      "$realityShortID"
                    ]
                 }
              },
@@ -4797,7 +4803,7 @@ showConnectionInformation() {
             echo "ALLOW INSECURE: TRUE"
             ;;
         reality)
-            echo "ID: $xrUUID"
+            echo "ID: $realityUUID"
             echo "FLOW: xtls-rprx-vision"
             echo "ENCRYPTION: none"
             echo "NETWORK: TCP"
@@ -4805,8 +4811,8 @@ showConnectionInformation() {
             echo "TLS: reality"
             echo "SNI: www.google-analytics.com"
             echo "FINGERPRINT: randomized"
-            echo "PUBLIC KEY: $xrayPublicKey"
-            echo "SHORT ID: $shortId"
+            echo "PUBLIC KEY: $realityPublicKey"
+            echo "SHORT ID: $realityShortID"
             ;;
         shadowsocks)
             echo "PASSWORD: $ssPassword"
@@ -4816,7 +4822,7 @@ showConnectionInformation() {
     echo "=========="
     # Reality Private Key
     if [ $tunnelingMethod == reality ]; then
-        echo "PRIVATE KEY : $xrayPrivateKey"
+        echo "PRIVATE KEY : $realityPrivateKey"
         fi
     echo "LOCAL USERNAME : $tempNewAccUsername"
     echo "LOCAL PASSWORD : $tempNewAccPassword"
@@ -4838,7 +4844,7 @@ showQrCode() {
             local serverConfig="hy2://$h2UserPass@$serverIp:$tunnelPort/?insecure=1&obfs=salamander&obfs-password=$h2ObfsPass#$serverName"
             ;;
         reality)
-            local serverConfig="vless://$xrUUID@$serverIp:$tunnelPort?security=reality&encryption=none&pbk=$xrayPublicKey&headerType=none&fp=randomized&type=tcp&flow=xtls-rprx-vision&sni=www.google-analytics.com&sid=$shortId#$serverName"
+            local serverConfig="vless://$realityUUID@$serverIp:$tunnelPort?security=reality&encryption=none&pbk=$realityPublicKey&headerType=none&fp=randomized&type=tcp&flow=xtls-rprx-vision&sni=www.google-analytics.com&sid=$realityShortID#$serverName"
             ;;
         shadowsocks)
             local encodedSegment=$(openssl base64 <<< "chacha20-ietf-poly1305:$ssPassword")
@@ -5019,9 +5025,21 @@ while [ ! -z "$1" ]; do
             h2UserPass=$2
             ;;
         # Reality
-        # Set custom UUID for reality protocol.
-        -setxruuid)
-            xrUUID=$2
+        # Set custom UUID.
+        -setxrUUID)
+            realityUUID=$2
+            ;;
+        # Set custom private key.
+        -setxrprivkey)
+            realityPrivateKey=$2
+            ;;
+        # Set custom public key.
+        -setxrpubkey)
+            realityPublicKey=$2
+            ;;
+        # Set custom short ID
+        -setxrshortid)
+            realityShortID=$2
             ;;
         # ShadowSocks
         # Forces snap to use edge channel for shadowsocks-libev package.
