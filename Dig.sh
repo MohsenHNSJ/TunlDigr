@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.6.6"
+scriptVersion="0.6.7"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -43,9 +43,9 @@ askTunnelingMethod() {
 	echo "|             Select the desired tunneling method to set up             |"
 	echo "|                   Enter only numbers between 1 - 3                    |"
 	echo "========================================================================="
-	echo "1 - Hysteria 2"
+	echo "1 - Hysteria 2 (Sing-Box)"
 	echo "2 - Reality (XTLS VLESS)"
-	echo "3 - Shadowsocks (Obsolete)"
+	echo "3 - Shadowsocks (Shadowsocks-llibev, Obsolete)"
     # We ask the user to select the desired tunneling method.
 	# We limit the input character count to 1 by using (-n) argument.
 	read -n 1 -p "Select tunneling method: " tunnelingMethod
@@ -493,7 +493,13 @@ createSSLCertificateKeyPairs() {
 downloadFiles() {
     # If selected tunnel is ShadowSocks, only one command is needed and other steps are not required.
     if [ $tunnelingMethod == shadowsocks ]; then
-        snap install shadowsocks-libev
+        # We check wether user has requested to install edge channel or not.
+	    # If so, we will use edge channel.
+        if [ -v ssUseEdgeChannel ]; then
+            snap install shadowsocks-libev --edge
+        else
+            snap install shadowsocks-libev
+        fi
         return
         fi
     # Get current hardware architecture.
@@ -4947,7 +4953,7 @@ installTunnel() {
 # We iterate through all provided arguments.
 while [ ! -z "$1" ]; do
 	case "$1" in
-		# Tunneling method
+		# Tunneling method.
 		-tm)
 			shift
 			# Hysteria 2
@@ -4979,37 +4985,43 @@ while [ ! -z "$1" ]; do
         -dqrcode)
             disableQrCode=1
             ;;
-        # Disable showing the startup message
+        # Disable showing the startup message.
         -dstartmsg)
             disableStartupMessage=1
             ;;
-		# Set custom username for new account (default: random)
+		# Set custom username for new account (default: random).
 		-setusername)
 			newAccUsername=$2
 			;;
-		# Set custom password for new account (default: random)
+		# Set custom password for new account (default: random).
 		-setuserpass)
 			newAccPassword=$2
 			;;
-        # Set custom port for protcols
+        # Set custom port for protcols.
         -settunnelport)
             tunnelPort=$2
             ;;
-        # Set custom server name
+        # Set custom server name.
         -setservername)
             serverName=$2
             ;;
-		# Set custom SSL certificate common name for hysteria 2 (CN) (default: google-analytics.com)
+        # Hysteria 2
+		# Set custom SSL certificate common name for hysteria 2 (CN) (default: google-analytics.com).
 		-seth2sslcn)
 			h2sslcn=$2
 			;;
-		# Set custom hysteria 2 obfs password (default: random)
+		# Set custom hysteria 2 obfs password (default: random).
         -seth2obfspass)
             h2ObfsPass=$2
             ;;
-        # Set custom password for hysteria 2 protocol authentication password
+        # Set custom password for hysteria 2 protocol authentication password.
         -seth2userpass)
             h2UserPass=$2
+            ;;
+        # ShadowSocks
+        # Forces snap to use edge channel for shadowsocks-libev package.
+        -ssedge)
+            ssUseEdgeChannel=1
             ;;
 	    esac
     shift
@@ -5021,17 +5033,17 @@ if [ ! -v disableStartupMessage ]; then
     showStartupMessage
     fi
 
-# We check wether the tunneling method is supplied at execution or not
-# If not, we will ask for it
+# We check wether the tunneling method is supplied at execution or not.
+# If not, we will ask for it.
 if [ ! -v tunnelingMethod ]; then
 	askTunnelingMethod
     fi
 
-# We check wether user requested to disable package updating or not
-# If not, we will update packages
+# We check wether user requested to disable package updating or not.
+# If not, we will update packages.
 if [ ! -v disablePackageUpdating ]; then
 	installPackages
     fi
 
-# We call the installation pipeline
+# We call the installation pipeline.
 installTunnel
