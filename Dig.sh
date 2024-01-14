@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.6.5"
+scriptVersion="0.6.6"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -4743,10 +4743,16 @@ startService() {
         reality)
             local serviceName="xray"
             ;;
+        shadowsocks)
+            local serviceName="shadowsocks-libev-server@config"
         esac
     echo "========================================================================="
     echo "|                         Starting Service                              |"
     echo "========================================================================="
+    # If the selected tunnel is ShadowSocks, We must manually enable the service to start on boot.
+    if [ $tunnelingMethod == shadowsocks ]; then
+        sudo systemctl enable $serviceName
+        fi
     # We now start the tunnel service.
     sudo systemctl start $serviceName && sudo systemctl status $serviceName
     }
@@ -4771,7 +4777,7 @@ showConnectionInformation() {
         hysteria2)
             echo "NAME : $serverName"
             ;;
-        reality)
+        reality || shadowsocks)
             echo "REMARKS : $serverName"
             ;;
             esac
@@ -4780,12 +4786,11 @@ showConnectionInformation() {
     # We determine the selected tunneling method and set fields accordingly.
     case $tunnelingMethod in
         hysteria2)
-            echo "OBFUSCATION PASSWORD : $h2ObfsPass"
-            echo "AUTHENTICATION PASSWORD : $h2UserPass"
-            echo "ALLOW INSECURE : TRUE"
+            echo "OBFUSCATION PASSWORD: $h2ObfsPass"
+            echo "AUTHENTICATION PASSWORD: $h2UserPass"
+            echo "ALLOW INSECURE: TRUE"
             ;;
         reality)
-            echo "REMARKS : $serverName"
             echo "ID: $randomUUID"
             echo "FLOW: xtls-rprx-vision"
             echo "ENCRYPTION: none"
@@ -4796,6 +4801,10 @@ showConnectionInformation() {
             echo "FINGERPRINT: randomized"
             echo "PUBLIC KEY: $xrayPublicKey"
             echo "SHORT ID: $shortId"
+            ;;
+        shadowsocks)
+            echo "PASSWORD: $ssPassword"
+            echo "SECURITY: CHACHA20-IETF-POLY1305"
             ;;
             esac
     echo "=========="
@@ -4824,6 +4833,10 @@ showQrCode() {
             ;;
         reality)
             local serverConfig="vless://$randomUUID@$serverIp:$tunnelPort?security=reality&encryption=none&pbk=$xrayPublicKey&headerType=none&fp=randomized&type=tcp&flow=xtls-rprx-vision&sni=www.google-analytics.com&sid=$shortId#$serverName"
+            ;;
+        shadowsocks)
+            local encodedSegment=$(openssl base64 <<< "chacha20-ietf-poly1305:$ssPassword")
+            local serverConfig="ss://$encodedSegment@$serverIp:$tunnelPort#$serverName"
             ;;
         esac  
     # We output a qrcode to ease connection.
