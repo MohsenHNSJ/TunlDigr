@@ -7,6 +7,7 @@ Optimized for Iran
 - [Usage](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#usage)
 - [General Arguments](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#general-arguments)
 - [Hysteria Arguments](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#hysteria-arguments)
+- [ShadowSocks Arguments](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#shadowsocks-arguments)
 
 # Features:  
 - install and run LATEST Reality server with one command for the following architectures: `i386` `amd64` `arm64` `armv7` `s390x` `ppc64` `armv6l`
@@ -96,4 +97,8 @@ default is random
  
 
 ---
+
+## ShadowSocks Arguments  
+### `-ssedge` (shadowsocks edge channel):  
+by adding this flag, the script will install the edge channel version of `shadowsocks-libev`  
 
