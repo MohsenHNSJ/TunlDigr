@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.6.3"
+scriptVersion="0.6.4"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -171,7 +171,7 @@ saveAndTransferCredentials() {
 	echo $newAccUsername > /tunlDigrTemp/tempNewAccUsername.txt
 	echo $newAccPassword > /tunlDigrTemp/tempNewAccPassword.txt
     # If selected tunneling method is not shadowsocks, We save the latest version of tunneling method.
-    if[ ! $tunnelingMethod=shadowsocks ]; then
+    if[ ! $tunnelingMethod == shadowsocks ]; then
 	    echo $latestPackageVersion > /tunlDigrTemp/tempLatestPackageVersion.txt
         fi
 	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed.
@@ -242,6 +242,7 @@ createService() {
     local hysteria2ServicePath="/etc/systemd/system/hysteria2.service"
     local hysteria2serviceDescription="sing-box service"
     local hysteria2ServiceDocumentation="https://sing-box.sagernet.org"
+    local hysteria2ServiceAfter="network.target nss-lookup.target"
     local hysteriaCapabilityBoundingSet="CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH"
     local hysteriaAmbientCapabilities="CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH"
     local hysteriaExecStart="/home/$newAccUsername/hysteria2/sing-box -D /home/$newAccUsername/hysteria2/ run -c /home/$newAccUsername/hysteria2/config.json"
@@ -249,6 +250,7 @@ createService() {
     # Reality
     local realityServicePath="/etc/systemd/system/xray.service"
     local realityServiceDescription="XTLS Xray-Core a VMESS/VLESS Server"
+    local realityServiceAfter="network.target nss-lookup.target"
     local realityCapabilityBoundingSet="CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
     local realityAmbientCapabilities="CAP_NET_ADMIN CAP_NET_BIND_SERVICE"
     local realityExecStart="/home/$newAccUsername/xray/xray run -config /home/$newAccUsername/xray/config.json"
@@ -257,6 +259,8 @@ createService() {
     local shadowsocksServicePath="/etc/systemd/system/shadowsocks-libev-server@.service"
     local shadowsocksServiceDescription="Shadowsocks-Libev Custom Server Service"
     local shadowsocksServiceDocumentation="man:ss-server(1)"
+    local shadowsocksServiceAfter="network-online.target"
+    local shadowsocksExecStart="/usr/bin/snap run shadowsocks-libev.ss-server -c /var/snap/shadowsocks-libev/common/etc/shadowsocks-libev/config.json"
     # We determine the selected tunneling method and set service variables accordingly.
     case $tunnelingMethod in
         hysteria2)
@@ -264,6 +268,7 @@ createService() {
             local serviceName="Hysteria 2"
             local serviceDescription=$hysteria2serviceDescription
             local serviceDocumentation=$hysteria2ServiceDocumentation
+            local serviceAfter=$hysteria2ServiceAfter
             local serviceCapabilityBoundingSet=$hysteriaCapabilityBoundingSet
             local serviceAmbientCapabilities=$hysteriaAmbientCapabilities
             local serviceExecStart=$hysteriaExecStart
@@ -273,6 +278,7 @@ createService() {
             local servicePath=$realityServicePath
             local serviceName="Reality"
             local serviceDescription=$realityServiceDescription
+            local serviceAfter=$realityServiceAfter
             local serviceCapabilityBoundingSet=$realityCapabilityBoundingSet
             local serviceAmbientCapabilities=$realityAmbientCapabilities
             local serviceExecStart=$realityExecStart
@@ -282,6 +288,8 @@ createService() {
             local servicePath=$shadowsocksServicePath
             local serviceDescription=$shadowsocksServiceDescription
             local serviceDocumentation=$shadowsocksServiceDocumentation
+            local serviceAfter=$shadowsocksServiceAfter
+            local serviceExecStart=$shadowsocksExecStart
             ;;
         esac
 	echo "========================================================================="
@@ -296,12 +304,25 @@ createService() {
             sudo echo "Documentation=$serviceDocumentation" >> $servicePath
             ;;
         esac
-	sudo echo "After=network.target nss-lookup.target" >> $servicePath
+	sudo echo "After=$serviceAfter" >> $servicePath
+    # ShadowSocks Wants
+    if [ $tunnelingMethod == shadowsocks ]; then
+        sudo echo "Wants=network-online.target" >> $servicePath
+        fi
 	sudo echo "[Service]" >> $servicePath
-	sudo echo "User=$newAccUsername" >> $servicePath
-	sudo echo "Group=$newAccUsername" >> $servicePath
-	sudo echo "CapabilityBoundingSet=$serviceCapabilityBoundingSet" >> $servicePath
-	sudo echo "AmbientCapabilities=$serviceAmbientCapabilities" >> $servicePath
+    # ShadowSocks Type
+    if [ $tunnelingMethod == shadowsocks ]; then
+        sudo echo "Type=simple" >> $servicePath
+        fi
+    # Hysteria 2 & Reality User, Group, CapabilityBoundingSet, AmbientCapabilities
+    case $tunnelingMethod in
+        hysteria2 || reality)
+            	sudo echo "User=$newAccUsername" >> $servicePath
+	            sudo echo "Group=$newAccUsername" >> $servicePath
+	            sudo echo "CapabilityBoundingSet=$serviceCapabilityBoundingSet" >> $servicePath
+	            sudo echo "AmbientCapabilities=$serviceAmbientCapabilities" >> $servicePath
+            ;;
+        esac
     # Reality NoNewPrivileges
     if [ $tunnelingMethod == reality ]; then
         sudo echo "NoNewPrivileges=true" >> $servicePath
@@ -310,8 +331,13 @@ createService() {
     # Hysteria 2 ExecReload
     if [ $tunnelingMethod == hysteria2 ]; then
 	    sudo echo "ExecReload=/bin/kill -HUP \$MAINPID" >> $servicePath
-        fi
-	sudo echo "Restart=on-failure" >> $servicePath
+        fi  
+    # Hysteria 2 & Reality Restart
+    case $tunnelingMethod in
+        hysteria2 || reality)
+            sudo echo "Restart=on-failure" >> $servicePath
+            ;;
+        esac
     # Reality RestartPreventExitStatus and StandardOutput 
     if [ $tunnelingMethod == reality ]; then
         sudo echo "RestartPreventExitStatus=23" >> $servicePath
@@ -325,7 +351,12 @@ createService() {
     if [ $tunnelingMethod == reality ]; then
         sudo echo "LimitNPROC=100000" >> $servicePath
         fi
-	sudo echo "LimitNOFILE=$serviceLimitNOFILE" >> $servicePath
+    # Hysteria 2 & Reality LimitNOFILE
+    case $tunnelingMethod in
+        hysteria2 || reality)
+	        sudo echo "LimitNOFILE=$serviceLimitNOFILE" >> $servicePath
+            ;;
+        esac
 	sudo echo "" >> $servicePath
 	sudo echo "[Install]" >> $servicePath
 	sudo echo "WantedBy=multi-user.target" >> $servicePath
