@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.6.4"
+scriptVersion="0.6.5"
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -186,9 +186,11 @@ readAndRemoveCredentials() {
 	# We read the saved credentials.
 	tempNewAccUsername=$(</tunlDigrTemp/tempNewAccUsername.txt)
 	tempNewAccPassword=$(</tunlDigrTemp/tempNewAccPassword.txt)
-    # We read the latest version of tunneling method.
-    tempLatestPackageVersion=$(</tunlDigrTemp/tempLatestPackageVersion.txt)
-    sudo rm /tunlDigrTemp/tempLatestPackageVersion.txt
+    # If selected tunneling method is not shadowsocks, We read the latest version of tunneling method.
+    if[ ! $tunnelingMethod == shadowsocks ]; then
+        tempLatestPackageVersion=$(</tunlDigrTemp/tempLatestPackageVersion.txt)
+        sudo rm /tunlDigrTemp/tempLatestPackageVersion.txt
+        fi
 	# We delete senstive inforamtion.
 	sudo rm /tunlDigrTemp/tempNewAccUsername.txt
 	sudo rm /tunlDigrTemp/tempNewAccPassword.txt
@@ -489,6 +491,11 @@ createSSLCertificateKeyPairs() {
 # Downloads the required files for selected tunnel and extracts them, then removes the downloaded package.
 # TODO: Rework the reality downloader to use reality as name not xray (this makes some confusion later on).
 downloadFiles() {
+    # If selected tunnel is ShadowSocks, only one command is needed and other steps are not required.
+    if [ $tunnelingMethod == shadowsocks ]; then
+        snap install shadowsocks-libev
+        return
+        fi
     # Get current hardware architecture.
     local hardwareArch=$(getHardwareArch)
     # Hysteria 2
@@ -4697,6 +4704,35 @@ configureXray() {
 EOL
 }
 
+configureShadowsocks() {
+    # We create some local variables to hold tunnel specific data.
+    local configDirectoryPath="/var/snap/shadowsocks-libev/common/etc/shadowsocks-libev"
+    local configFilePath="$configDirectoryPath/config.json"
+    echo "========================================================================="
+    echo "|                     Configuring ShadowSocks                           |"
+    echo "========================================================================="
+
+    # We will create the directory path for config file.
+    sudo mkdir -p $configDirectoryPath
+
+    # We create an empty config file.
+    sudo touch $configFilePath
+
+    # We generate a password for ShadowSocks authentication
+    ssPassword=$(generateRandom password)
+
+    # Configure ShadowSocks config file
+    sudo echo "{" > $configFilePath
+    sudo echo "    \"server\":[\"[::0]\", \"0.0.0.0\"]," >> $configFilePath
+    sudo echo "    \"mode\":\"tcp_and_udp\"," >> $configFilePath
+    sudo echo "    \"server_port\":$tunnelPort," >> $configFilePath
+    sudo echo "    \"password\":\"$ssPassword\"," >> $configFilePath
+    sudo echo "    \"timeout\":600," >> $configFilePath
+    sudo echo "    \"method\":\"chacha20-ietf-poly1305\"," >> $configFilePath
+    sudo echo "    \"nameserver\":\"1.1.1.1\"" >> $configFilePath
+    sudo echo "}" >> $configFilePath
+}
+
 # Starts the tunnel service based on the specified tunneling method.
 startService() {
     # We determine the selected tunneling method and set service name accordingly.
@@ -4874,6 +4910,9 @@ installTunnel() {
             ;;
         reality)
             configureXray
+            ;;
+        shadowsocks)
+            configureShadowsocks
             ;;
         esac
     # We start the tunnel service.
