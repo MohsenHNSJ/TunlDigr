@@ -1,6 +1,16 @@
 #!/bin/bash
 
-scriptVersion="0.7.0"
+scriptVersion="0.7.1"
+
+# The URL of the script project is:
+# https://github.com/MohsenHNSJ/TunlDigr
+
+# The URL of the script is:
+# https://raw.githubusercontent.com/MohsenHNSJ/TunlDigr/main/Dig.sh
+
+# If the script executes incorrectly, go to:
+# https://github.com/MohsenHNSJ/TunlDigr/issues
+
 
 # Generates a random variable and echos it back.
 # <<<Options
@@ -203,7 +213,7 @@ allowPortOnUfw() {
 	echo "|                             Allowing Port                             |"
 	echo "========================================================================="
 	# We provide password to 'sudo' command and open protocol port.
-    # We check wether user has provided custom port and if so, we check if it's in the acceptable range (0 - 65535).
+    # We check whether user has provided custom port and if so, we check if it's in the acceptable range (0 - 65535).
     # If not, we will use the dafault 443.
     if [ ! -v tunnelPort ] || [[ $tunnelPort != +([0-9]) ]] || [ $tunnelPort -gt 65535 ]; then       
         tunnelPort=443
@@ -218,12 +228,12 @@ addNewUser() {
 	echo "========================================================================="
 	echo "|                  Adding a new user and configuring                    |"
 	echo "========================================================================="
-	# We check wether user has provided custom username.
+	# We check whether user has provided custom username.
 	# If not, we will generate a random username.
 	if [ ! -v newAccUsername ]; then
         newAccUsername=$(generateRandom username)
 	    fi
-	# We check wether user has provided custom password.
+	# We check whether user has provided custom password.
 	# If not, we will generate a random password.
 	if [ ! -v newAccPassword ]; then
 		newAccPassword=$(generateRandom password)
@@ -480,7 +490,7 @@ getHardwareArch() {
 createSSLCertificateKeyPairs() {
     # We create certificate keys.
 	openssl ecparam -genkey -name prime256v1 -out ca.key
-	# We check wether user has provided custom common name for SSL certificate.
+	# We check whether user has provided custom common name for SSL certificate.
 	# If not, we will use default.
 	if [ ! -v sslcn ]; then
 		sslcn="google-analytics.com"
@@ -493,7 +503,7 @@ createSSLCertificateKeyPairs() {
 downloadFiles() {
     # If selected tunnel is ShadowSocks, only one command is needed and other steps are not required.
     if [ $tunnelingMethod == shadowsocks ]; then
-        # We check wether user has requested to install edge channel or not.
+        # We check whether user has requested to install edge channel or not.
 	    # If so, we will use edge channel.
         if [ -v ssUseEdgeChannel ]; then
             snap install shadowsocks-libev --edge
@@ -562,13 +572,13 @@ configureSingBox() {
     # We restart the service and enable auto-start
     sudo systemctl daemon-reload && sudo systemctl enable hysteria2
 
-    # We check wether user has provided custom hysteria obfs password
+    # We check whether user has provided custom hysteria obfs password
 	# If not, we will generate a random password for salamander obfs
 	if [ ! -v h2ObfsPass ]; then
     	h2ObfsPass=$(generateRandom password)
         fi
 
-    # We check wether user has provided custom hysteria authentication password
+    # We check whether user has provided custom hysteria authentication password
     # If not, we will generate a random password for hysteria user
     if [ ! -v h2UserPass ]; then
         h2UserPass=$(generateRandom password)
@@ -2657,13 +2667,13 @@ configureXray() {
     echo "|                         Configuring xray                              |"
     echo "========================================================================="
     
-    # We check wether user has provided custom UUID or not.
+    # We check whether user has provided custom UUID or not.
 	# If not, we will generate a random UUID.
 	if [ ! -v realityUUID ]; then
         realityUUID=$(./xray uuid -i $(generateRandom password))
         fi
 
-    # We check wether user has provided custom public & private key or not.
+    # We check whether user has provided custom public & private key or not.
     # If one or both of them are missing, generate a new public and private key.
     if [ ! -v $realityPrivateKey || ! -v $realityPublicKey ]; then
         # We generate public and private keys and temporarily save them.
@@ -2676,7 +2686,7 @@ configureXray() {
         realityPublicKey="${temp3#*Public key: }"
         fi
 
-    # We check wether user has provided custom short ID or not.
+    # We check whether user has provided custom short ID or not.
     # If not, we will generate a random short ID.
     if [ ! -v $realityShortID ]; then
         # We generate a short id.
@@ -4743,7 +4753,7 @@ configureShadowsocks() {
     sudo echo "    \"method\":\"chacha20-ietf-poly1305\"," >> $configFilePath
     sudo echo "    \"nameserver\":\"1.1.1.1\"" >> $configFilePath
     sudo echo "}" >> $configFilePath
-}
+    }
 
 # Starts the tunnel service based on the specified tunneling method.
 startService() {
@@ -4777,7 +4787,7 @@ showConnectionInformation() {
     echo "========================================================================="
     # We get server IP.
     serverIp=$(hostname -I | awk '{ print $1}')
-    # We check wether user has provided custom server name or not.
+    # We check whether user has provided custom server name or not.
 	# If not, we will use hostname as server name.
     if [ ! -v serverName ]; then
         serverName=$('hostname')
@@ -4891,7 +4901,7 @@ installTunnel() {
     case $tunnelingMethod in
         hysteria2 || reality)
             latestPackageVersion=$(checkLatestVersion)
-            # We check wether we were able to get the latest package version.
+            # We check whether we were able to get the latest package version.
             # If not, we will exit the script to prevent messing up something.
             if [ -z $latestPackageVersion ]; then
                 echo "There is a problem while trying to get latest version of $tunnelName!"
@@ -4905,7 +4915,7 @@ installTunnel() {
                 fi
             ;;
         esac
-    # We check wether user has disabled server settings optimization or not.
+    # We check whether user has disabled server settings optimization or not.
 	# If not, we will optimize server settings.
 	if [ ! -v disableServerOptimization ]; then
 		optimizeServerSettings
@@ -4942,12 +4952,12 @@ installTunnel() {
         esac
     # We start the tunnel service.
     startService
-    # We check wether user has disabled showing connection information or not.
+    # We check whether user has disabled showing connection information or not.
 	# If not, we will show connection information.
     if [ ! -v disableConnectionInformation ]; then
         showConnectionInformation
         fi
-    # We check wether user has disabled showing QR Code or not.
+    # We check whether user has disabled showing QR Code or not.
 	# If not, we will show QR Code.
     if [ ! -v disableQrCode ]; then
         showQrCode
@@ -5050,23 +5060,33 @@ while [ ! -z "$1" ]; do
     shift
     done
 
-# We check wether user requested to disable startup message or not.
+# We check whether user requested to disable startup message or not.
 # If not, we will show the startup message.
 if [ ! -v disableStartupMessage ]; then
     showStartupMessage
     fi
 
-# We check wether the tunneling method is supplied at execution or not.
+# We check whether the tunneling method is supplied at execution or not.
 # If not, we will ask for it.
 if [ ! -v tunnelingMethod ]; then
 	askTunnelingMethod
     fi
 
-# We check wether user requested to disable package updating or not.
+# We check whether user requested to disable package updating or not.
 # If not, we will update packages.
 if [ ! -v disablePackageUpdating ]; then
 	installPackages
     fi
+
+# We check if the selected tunnel already exists or not.
+# TODO: If so, we have to ask for removal or updating.
+case $tunnelingMethod in
+    reality)
+        if [ -f '/etc/systemd/system/xray.service' ]; then
+            xrayServiceAlreadyExists=1
+            fi
+        ;;
+    esac
 
 # We call the installation pipeline.
 installTunnel
