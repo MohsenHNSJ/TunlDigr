@@ -101,21 +101,21 @@ default is random
 ## Reality Arguments
 ### `-setxruuid` (set custom uuid):  
 you can set custom UUID for reality protocol.  
-default generates random.
+default generates random.  
 
 ### `-setxrprivkey` (set custom private key):  
-you can set custom private key.
-MUST set `-setxrpubkey` too or it will be ignored.
-default generates random.
+you can set custom private key.  
+MUST set `-setxrpubkey` too or it will be ignored.  
+default generates random.  
 
 ### `-setxrpubkey` (set custom public key):  
-you can set custom public key.
-MUST set `-setxrprivkey` too or it will be ignored.
-default generates random.
+you can set custom public key.  
+MUST set `-setxrprivkey` too or it will be ignored.  
+default generates random.  
 
 ### `-setxrshortid` (set custom short id):  
-you can set custom short ID.
-default generates random.
+you can set custom short ID.  
+default generates random.  
 
 ---
 
