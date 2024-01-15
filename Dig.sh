@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.7.1"
+scriptVersion="0.7.2"
 
 # The URL of the script project is:
 # https://github.com/MohsenHNSJ/TunlDigr
@@ -383,6 +383,12 @@ switchUser() {
 	sshpass -p $newAccPassword ssh -o "StrictHostKeyChecking=no" $newAccUsername@127.0.0.1
     }
 
+# Shows an error message and exits the script.
+hardwareNotSupported() {
+    echo "This architecture is NOT Supported by $tunnelName. exiting ..."
+    exit
+    }
+
 # Gets the current machine's hardware architecture and translates it to appropriate string based on selected tunneling method.
 # If the tunnel does not supprt the current hardware architecture, an error message will be shown and the script will exit.
 getHardwareArch() {
@@ -395,7 +401,7 @@ getHardwareArch() {
 	    x86_64)
             case $tunnelingMethod in
                 hysteria2)
-                    # We check if cpu supprt AVX
+                    # We check if cpu supprt AVX.
 	                avxsupport="$(lscpu | grep -o avx)"
 	                if [ -z "$avxsupport" ]; then 
 		                hwarch="amd64"
@@ -447,8 +453,7 @@ getHardwareArch() {
             case $tunnelingMethod in
                 # Hysteria does not support armv6l, we will show an error and exit the script
                 hysteria2)
-	                echo "This architecture is NOT Supported by Sing-Box. exiting ..."
-	                exit
+                    hardwareNotSupported
                     ;;
                 xray)
                     hwarch="arm32-v6"
@@ -460,8 +465,7 @@ getHardwareArch() {
             case $tunnelingMethod in
                 # Hysteria does not support armv6l, we will show an error and exit the script
                 hysteria2)
-	                echo "This architecture is NOT Supported by Sing-Box. exiting ..."
-	                exit
+                    hardwareNotSupported
                     ;;
                 xray)
                     hwarch="ppc64"
@@ -512,8 +516,6 @@ downloadFiles() {
         fi
         return
         fi
-    # Get current hardware architecture.
-    local hardwareArch=$(getHardwareArch)
     # Hysteria 2
     local singBoxUrl="https://github.com/SagerNet/sing-box/releases/download/v$tempLatestPackageVersion/sing-box-$tempLatestPackageVersion-linux-$hardwareArch.tar.gz"
     local singBoxPackageName="sing-box-$tempLatestPackageVersion-linux-$hardwareArch.tar.gz"
@@ -4896,6 +4898,14 @@ installTunnel() {
 	echo "========================================================================="
 	echo "|                        Installing $tunnelName                          |"
 	echo "========================================================================="
+    # We check whether the selected tunneling method is available on the current machine architecture or not.
+    # If not, we will show and error and exit the script.
+    hardwareArch=$(getHardwareArch)
+    # We check whether user requested to disable package updating or not.
+    # If not, we will update packages.
+    if [ ! -v disablePackageUpdating ]; then
+	    installPackages
+        fi
     # If the selected tunnel is Hysteria 2 or Reality, we check and save the latest package version number.
     # ShadowSocks uses (snap) to install and does not need to check a url.
     case $tunnelingMethod in
@@ -5070,12 +5080,6 @@ if [ ! -v disableStartupMessage ]; then
 # If not, we will ask for it.
 if [ ! -v tunnelingMethod ]; then
 	askTunnelingMethod
-    fi
-
-# We check whether user requested to disable package updating or not.
-# If not, we will update packages.
-if [ ! -v disablePackageUpdating ]; then
-	installPackages
     fi
 
 # We check if the selected tunnel already exists or not.
