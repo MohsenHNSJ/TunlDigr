@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.7.2"
+scriptVersion="0.7.3"
 
 # The URL of the script project is:
 # https://github.com/MohsenHNSJ/TunlDigr
@@ -383,10 +383,40 @@ switchUser() {
 	sshpass -p $newAccPassword ssh -o "StrictHostKeyChecking=no" $newAccUsername@127.0.0.1
     }
 
-# Shows an error message and exits the script.
+# Checks whether the selected tunnel already exists on the machine or not.
+# TODO: If so, we have to ask for removal or updating.
+# TODO: CURRENTLY IT DOES NOTHING!!!
+checkIfTunnelAlreadyExists() {
+    # We check if the selected tunnel already exists or not.
+    case $tunnelingMethod in
+        reality)
+            if [ -f '/etc/systemd/system/xray.service' ]; then
+            xrayServiceAlreadyExists=1
+            fi
+        ;;
+    esac
+    }
+
+# Restarts the tunneling pipeline for a fresh start.
+reloadScript() {
+    # We clear the tunnelingMethod variable
+    unset tunnelingMethod
+    # We ask the user to select a tunneling method again.
+    askTunnelingMethod
+    # We check whether the selected tunneling method already exists or not.
+    checkIfTunnelAlreadyExists
+    # We start installing the tunnel.
+    installTunnel
+    }
+
+# Shows an error message, then calls the reloadScript function.
 hardwareNotSupported() {
-    echo "This architecture is NOT Supported by $tunnelName. exiting ..."
-    exit
+    echo "This architecture is NOT Supported by $tunnelName"
+    echo "Try selecting another tunnel"
+    echo "the script will now return to tunnel selection menu in 5 seconds"
+    # We will pause the script for 5 seconds and then reload the script
+    sleep 5s
+    reloadScript
     }
 
 # Gets the current machine's hardware architecture and translates it to appropriate string based on selected tunneling method.
@@ -4886,13 +4916,13 @@ installTunnel() {
     # We determine the selected tunneling method and set tunnel variables accordingly.
     case $tunnelingMethod in
         hysteria2)
-            local tunnelName="Hysteria 2"
+            tunnelName="Hysteria 2"
             ;;
         reality)
-            local tunnelName="Reality"
+            tunnelName="Reality"
             ;;
         shadowsocks)
-            local tunnelName="ShadowSocks"
+            tunnelName="ShadowSocks"
             ;;
         esac
 	echo "========================================================================="
@@ -5082,15 +5112,7 @@ if [ ! -v tunnelingMethod ]; then
 	askTunnelingMethod
     fi
 
-# We check if the selected tunnel already exists or not.
-# TODO: If so, we have to ask for removal or updating.
-case $tunnelingMethod in
-    reality)
-        if [ -f '/etc/systemd/system/xray.service' ]; then
-            xrayServiceAlreadyExists=1
-            fi
-        ;;
-    esac
+checkIfTunnelAlreadyExists
 
 # We call the installation pipeline.
 installTunnel
