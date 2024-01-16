@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.7.3"
+scriptVersion="0.7.4"
 
 # The URL of the script project is:
 # https://github.com/MohsenHNSJ/TunlDigr
@@ -419,6 +419,20 @@ hardwareNotSupported() {
     reloadScript
     }
 
+# Checks whether the cpu architecture has VFP (Vector Floating Point accelerator) support or not.
+# Returns:
+#   "Present"
+#   "Absent"
+checkVfpSupport() {
+    # We get cpu features located at /proc/cpuinfo and look for 'vfp' in it.
+    # If the count is greater than 0, then we have VFP support, else we don't have.
+    if [ $(grep -c 'vfp' /proc/cpuinfo) -gt 0 ]; then
+        echo "Present"
+    else
+        echo "Absent"
+        fi
+    }
+
 # Gets the current machine's hardware architecture and translates it to appropriate string based on selected tunneling method.
 # If the tunnel does not supprt the current hardware architecture, an error message will be shown and the script will exit.
 getHardwareArch() {
@@ -427,8 +441,19 @@ getHardwareArch() {
     # We translate it to appropriate string based on each tunneling method.
     # If the architecture is not supported by the selected tunneling method, we will show an error message and exit the script.
 	case $hwarch in
+        # x86 - 32 Bit
+        'i386' | 'i686')
+            case $tunnelingMethod in
+                hysteria2)
+                    hwarch="386"
+                    ;;
+                xray)
+                    hwarch="32"
+                    ;;
+                esac
+            ;;
         # x86 - 64 Bit
-	    x86_64)
+	    'x86_64' | 'amd64')
             case $tunnelingMethod in
                 hysteria2)
                     # We check if cpu supprt AVX.
@@ -443,21 +468,57 @@ getHardwareArch() {
                 xray)
                     hwarch="64"
                     ;;
-                    esac
+                esac
 	        ;;
-        # x86 - 32 Bit
-        i386)
+        # Arm - 32 Bit - V5
+        'armv5tel')
             case $tunnelingMethod in
                 hysteria2)
-                    hwarch="386"
+                    # Hysteria does not support armv5tel, we will show an error and reload the script.
+                    hardwareNotSupported
                     ;;
                 xray)
-                    hwarch="32"
+                    hwarch="arm32-v5"
                     ;;
-                    esac
+                esac
+            ;;
+        # Arm - 32 Bit - V6
+        'armv6l')
+            case $tunnelingMethod in
+                # Hysteria does not support armv6l, we will show an error and reload the script.
+                hysteria2)
+                    hardwareNotSupported
+                    ;;
+                xray)
+                    # We check whether the cpu has Vector Floating Point (VFP) accelerator or not.
+                    # If cpu does not suppport it, we revert back to an older package, omitted from these instruction calls.
+                    if [ checkVfpSupport == "Present" ]; then
+                        hwarch="arm32-v6"
+                    else
+                        hwarch="arm32-v5"
+                        fi
+                    ;;
+                esac
+            ;;
+        # Arm - 32 Bit - V7
+	    'armv7' | 'armv7l')
+            case $tunnelingMethod in
+                hysteria2)
+                    hwarch="armv7"
+                    ;;
+                xray)
+                    # We check whether the cpu has Vector Floating Point (VFP) accelerator or not.
+                    # If cpu does not suppport it, we revert back to an older package, omitted from these instruction calls.
+                    if [ checkVfpSupport == "Present" ]; then
+                        hwarch="arm32-v7a"
+                    else
+                        hwarch="arm32-v5"
+                        fi
+                    ;;
+                esac
             ;;
         # Arm - 64 Bit - V8
-	    aarch64)
+	    'aarch64' | 'armv8')
             case $tunnelingMethod in
                 hysteria2)
                     hwarch="arm64"
@@ -467,40 +528,89 @@ getHardwareArch() {
                     ;;
                     esac
             ;;
-        # Arm - 32 Bit - V7
-	    armv7l)
+        # MIPS - 32 Bit
+        'mips')
             case $tunnelingMethod in
-                hysteria2)
-                    hwarch="armv7"
-                    ;;
-                xray)
-                    hwarch="arm32-v7a"
-                    ;;
-                    esac
-            ;;
-        # Arm - 32 Bit - V6
-        armv6l)
-            case $tunnelingMethod in
-                # Hysteria does not support armv6l, we will show an error and exit the script
+                # Hysteria does not support mips, we will show an error and reload the script.
                 hysteria2)
                     hardwareNotSupported
                     ;;
                 xray)
-                    hwarch="arm32-v6"
+                    hwarch="mips32"
                     ;;
-                    esac
+                esac
+            ;;
+        # MIPS - 32 Bit - Little Endian
+        'mipsle')
+            case $tunnelingMethod in
+                # Hysteria does not support mipsle, we will show an error and reload the script.
+                hysteria2)
+                    hardwareNotSupported
+                    ;;
+                xray)
+                    hwarch="mips32le"
+                    ;;
+                esac
+            ;;
+        # MIPS - 64 Bit
+        'mips64')
+            case $tunnelingMethod in
+                # Hysteria does not support mips64, we will show an error and reload the script.
+                hysteria2)
+                    hardwareNotSupported
+                    ;;
+                xray)
+                    hwarch="mips64"
+                    ;;
+                esac
+            ;;
+        # MIPS - 64 Bit - Little Endian
+        'mips64le')
+            case $tunnelingMethod in
+                # Hysteria does not support mips64le, we will show an error and reload the script.
+                hysteria2)
+                    hardwareNotSupported
+                    ;;
+                xray)
+                    hwarch="mips64le"
+                    ;;
+                esac
             ;;
         # PowerPC - 64 Bit
-        ppc64)
+        'ppc64')
             case $tunnelingMethod in
-                # Hysteria does not support armv6l, we will show an error and exit the script
+                # Hysteria does not support ppc64, we will show an error and exit the script
                 hysteria2)
                     hardwareNotSupported
                     ;;
                 xray)
                     hwarch="ppc64"
                     ;;
-                    esac
+                esac
+            ;;
+        # PowerPC - 64 Bit - Little Endian
+        'ppc64le')
+            case $tunnelingMethod in
+                # Hysteria does not support ppc64le, we will show an error and exit the script
+                hysteria2)
+                    hardwareNotSupported
+                    ;;
+                xray)
+                    hwarch="ppc64le"
+                    ;;
+                esac
+            ;;
+        # RISC V - 64 Bit
+        'riscv64')
+            case $tunnelingMethod in
+                # Hysteria does not support riscv64, we will show an error and exit the script
+                hysteria2)
+                    hardwareNotSupported
+                    ;;
+                xray)
+                    hwarch="riscv64"
+                    ;;
+                esac
             ;;
         # IBM System/390
         # Because there is no difference, we don't check anything here.
@@ -508,10 +618,9 @@ getHardwareArch() {
             hwarch="s390x"
             ;;
         # If nothing matched, either it's not implemented yet OR the tunnels don't support such architecture.
-        # We show an error message and exit the script.
+        # We show an error message and reload the script.
 	    *)
-	        echo "This architecture is NOT Supported by this script. exiting ..."
-	        exit
+            hardwareNotSupported
             ;;
 	    esac
     # We echo back the tranlated hardware architecture.
