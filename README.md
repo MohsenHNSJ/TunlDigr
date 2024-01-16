@@ -11,8 +11,8 @@ Optimized for Iran
 - [ShadowSocks Arguments](https://github.com/MohsenHNSJ/TunlDigr?tab=readme-ov-file#shadowsocks-arguments)
 
 # Features:  
-- install and run LATEST Reality server with one command for the following architectures: `i386` `amd64` `arm64` `armv7` `s390x` `ppc64` `armv6l`
-- Install and run LATEST Hysteria 2 server with one command for the following architectures: `i386` `amd64` `amd64v3` `arm64` `armv7` `s390x`
+- install and run LATEST Reality server with one command for the following architectures: `i386` `i686` `amd64` `x86_64` `armv5tel` `armv6l` `armv7` `armv7l` `arm64` `aarch64` `mips` `mipsle` `mips64` `mips64le` `ppc64` `ppc64le` `riscv64` `s390x` 
+- Install and run LATEST Hysteria 2 server with one command for the following architectures: `i386` `i686` `amd64` `x86_64` `amd64v3` `armv7` `armv7l` `arm64` `aarch64` `s390x`
 - install and run `shadowsocks-libev` using `snap`
 - Update required packages automatically (can be disabled)
 - Optimize server settings for best performance (can be disabled)
