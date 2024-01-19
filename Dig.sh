@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.7.5"
+scriptVersion="0.7.6"
 
 # The URL of the script project is:
 # https://github.com/MohsenHNSJ/TunlDigr
@@ -17,6 +17,25 @@ GREEN=$(tput setaf 34) # Success
 YELLOW=$(tput setaf 226) # Warning
 BLUE=$(tput setaf 39) # Information
 RESET=$(tput sgr0) # Reset
+
+# Global Variables
+# The file path for the access log.
+# The value is a valid file path, such as "/var/log/Xray/access.log".
+# When this item is not specified or is an empty value, the log is output to stdout.
+# The special value (none) disables access logs.
+XRAY_ACCESS_LOG_PATH=""
+
+# If set to 1, script should set XRAY_ACCESS_LOG_PATH as (none).
+DISABLE_XRAY_ACCESS_LOG=0
+
+# The file path for the error log.
+# The value is a valid file path, such as "/var/log/Xray/error.log".
+# When this item is not specified or is an empty value, the log is output to stdout.
+# The special value none disables error logs.
+XRAY_ERROR_LOG_PATH=""
+
+# If set to 1, script should set XRAY_ERROR_LOG_PATH as (none).
+DISABLE_XRAY_ERROR_LOG=0
 
 # Generates a random variable and echoes it back.
 # <<<Options
@@ -187,7 +206,7 @@ saveAndTransferCredentials() {
 	echo $newAccUsername > /tunlDigrTemp/tempNewAccUsername.txt
 	echo $newAccPassword > /tunlDigrTemp/tempNewAccPassword.txt
     # If selected tunneling method is not shadowsocks, We save the latest version of tunneling method.
-    if[ ! $tunnelingMethod == shadowsocks ]; then
+    if [ ! $tunnelingMethod == shadowsocks ]; then
 	    echo $latestPackageVersion > /tunlDigrTemp/tempLatestPackageVersion.txt
         fi
 	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the sensitive information when it's no longer needed.
@@ -203,7 +222,7 @@ readAndRemoveCredentials() {
 	tempNewAccUsername=$(</tunlDigrTemp/tempNewAccUsername.txt)
 	tempNewAccPassword=$(</tunlDigrTemp/tempNewAccPassword.txt)
     # If selected tunneling method is not shadowsocks, We read the latest version of tunneling method.
-    if[ ! $tunnelingMethod == shadowsocks ]; then
+    if [ ! $tunnelingMethod == shadowsocks ]; then
         tempLatestPackageVersion=$(</tunlDigrTemp/tempLatestPackageVersion.txt)
         sudo rm /tunlDigrTemp/tempLatestPackageVersion.txt
         fi
@@ -318,7 +337,7 @@ createService() {
 	sudo echo "Description=$serviceDescription" >> $servicePath
     # Hysteria 2 & ShadowSocks have Documentation.
         case $tunnelingMethod in
-        hysteria2 || shadowsocks)
+        'hysteria2' | 'shadowsocks')
             sudo echo "Documentation=$serviceDocumentation" >> $servicePath
             ;;
         esac
@@ -334,7 +353,7 @@ createService() {
         fi
     # Hysteria 2 & Reality User, Group, CapabilityBoundingSet, AmbientCapabilities
     case $tunnelingMethod in
-        hysteria2 || reality)
+        'hysteria2' | 'reality')
             	sudo echo "User=$newAccUsername" >> $servicePath
 	            sudo echo "Group=$newAccUsername" >> $servicePath
 	            sudo echo "CapabilityBoundingSet=$serviceCapabilityBoundingSet" >> $servicePath
@@ -352,7 +371,7 @@ createService() {
         fi  
     # Hysteria 2 & Reality Restart
     case $tunnelingMethod in
-        hysteria2 || reality)
+        'hysteria2' | 'reality')
             sudo echo "Restart=on-failure" >> $servicePath
             ;;
         esac
@@ -371,7 +390,7 @@ createService() {
         fi
     # Hysteria 2 & Reality LimitNOFILE
     case $tunnelingMethod in
-        hysteria2 || reality)
+        'hysteria2' | 'reality')
 	        sudo echo "LimitNOFILE=$serviceLimitNOFILE" >> $servicePath
             ;;
         esac
@@ -2814,17 +2833,43 @@ configureSingBox() {
 EOL
 }
 
+writeXrayConfigFile() {
+    # We store the path of the 'config.json' file.
+    XRAY_CONFIG_FILE_PATH=/home/$tempNewAccUsername/xray/config.json
+    # We initialize our parameters.
+    if [ $DISABLE_XRAY_ACCESS_LOG == 1 ]; then
+        # The special value (none) disables access logs.
+        $XRAY_ACCESS_LOG_PATH='none'
+        fi
+    if [ $DISABLE_XRAY_ERROR_LOG == 1 ]; then
+        # The special value (none) disables error logs.
+        $XRAY_ERROR_LOG_PATH='none'
+        fi
+
+    # We start writing to config file with ( > ) to replace existing config parameters if present.
+    sudo echo "{" > $XRAY_CONFIG_FILE_PATH
+
+    cat >> $XRAY_CONFIG_FILE_PATH << 'END_OF_LOG_SECTION'
+        "log":{
+            "access":   "$XRAY_ACCESS_LOG_PATH",
+            "error":    "$XRAY_ERROR_LOG_PATH",
+            "loglevel": "warning"
+            },
+END_OF_LOG_SECTION
+    
+    # We finish the file by closing the curly brackets
+    sudo echo "}" >> $XRAY_CONFIG_FILE_PATH
+    }
+
 configureXray() {
     echo "========================================================================="
     echo "|                         Configuring xray                              |"
-    echo "========================================================================="
-    
+    echo "========================================================================="  
     # We check whether user has provided custom UUID or not.
 	# If not, we will generate a random UUID.
 	if [ ! -v realityUUID ]; then
         realityUUID=$(./xray uuid -i $(generateRandom password))
         fi
-
     # We check whether user has provided custom public & private key or not.
     # If one or both of them are missing, generate a new public and private key.
     if [ ! -v $realityPrivateKey || ! -v $realityPublicKey ]; then
@@ -2837,25 +2882,21 @@ configureXray() {
         local temp3="${temp2#$privatekey}"
         realityPublicKey="${temp3#*Public key: }"
         fi
-
     # We check whether user has provided custom short ID or not.
     # If not, we will generate a random short ID.
     if [ ! -v $realityShortID ]; then
         # We generate a short id.
         realityShortID=$(openssl rand -hex 8)
         fi
-
     # We restart the service and enable auto-start.
     sudo systemctl daemon-reload && sudo systemctl enable xray
 
-    # We store the path of the 'config.json' file.
-    local configfile=/home/$tempNewAccUsername/xray/config.json
 
-    cat > $configfile << EOL
+
+
+    cat > $XRAY_CONFIG_FILE_PATH << EOL
     {
-       "log":{
-          "loglevel":"warning"
-       },
+
        "policy":{
           "levels":{
              "0":{
@@ -4951,7 +4992,7 @@ showConnectionInformation() {
         hysteria2)
             echo "NAME : $serverName"
             ;;
-        reality || shadowsocks)
+        'reality' | 'shadowsocks')
             echo "REMARKS : $serverName"
             ;;
             esac
@@ -5065,7 +5106,7 @@ installTunnel() {
     # If the selected tunnel is Hysteria 2 or Reality, we check and save the latest package version number.
     # ShadowSocks uses (snap) to install and does not need to check a URL.
     case $tunnelingMethod in
-        hysteria2 || reality)
+        'hysteria2' | 'reality')
             latestPackageVersion=$(checkLatestVersion)
             # We check whether we were able to get the latest package version.
             # If not, we will exit the script to prevent messing up something.
@@ -5215,9 +5256,25 @@ while [ ! -z "$1" ]; do
         -setxrpubkey)
             realityPublicKey=$2
             ;;
-        # Set custom short ID
+        # Set custom short ID.
         -setxrshortid)
             realityShortID=$2
+            ;;
+        # Set custom path for access log file.
+        -setxracslgpath)
+            $XRAY_ACCESS_LOG_PATH=$2
+            ;;
+        # Disables writing access logs.
+        -dxracslg)
+            $DISABLE_XRAY_ACCESS_LOG=1
+            ;;
+        # Set custom path for error log file.
+        -setxrerrlgpath)
+            $XRAY_ERROR_LOG_PATH=$2
+            ;;
+        # Disables writing error logs.
+        -dxrerrlg)
+            $DISABLE_XRAY_ERROR_LOG=1
             ;;
         # ShadowSocks
         # Forces snap to use edge channel for shadowsocks-libev package.

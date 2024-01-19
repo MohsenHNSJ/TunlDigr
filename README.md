@@ -67,10 +67,10 @@ useful in case the screen resolution is too small.
 by adding this flag, the script will *NOT* show the startup message.  
 
 ### `-setusername` (set custom username):
-the script generates a random username each time, you can override this behaviour and provide your custom username to be used when creating a new user.  
+the script generates a random username each time, you can override this behavior and provide your custom username to be used when creating a new user.  
 
 ### `-setuserpass` (set custom password):
-the script generates a random password each time, you can override this behaviour and provide your custom password to be used when creating a new user.  
+the script generates a random password each time, you can override this behavior and provide your custom password to be used when creating a new user.  
 
 ### `-settunnelport` (set custom port for protocol):  
 you can set custom port for protocols.  
@@ -116,6 +116,22 @@ default generates random.
 ### `-setxrshortid` (set custom short id):  
 you can set custom short ID.  
 default generates random.  
+
+### `-setxracslgpath` (set custom access log path):  
+The file path for the access log.  
+The value is a valid file path, such as "/var/log/Xray/access.log".  
+When this item is not specified or is an empty value, the log is output to stdout.  
+
+### `-dxracslg` (disable writing access log):  
+Disables writing access logs.  
+
+### `-setxrerrlgpath` (set custom error log path):  
+The file path for the error log.  
+The value is a valid file path, such as "/var/log/Xray/error.log".  
+When this item is not specified or is an empty value, the log is output to stdout.  
+
+### `-dxrerrlg` (disable writing error log):  
+Disables writing error logs.  
 
 ---
 
