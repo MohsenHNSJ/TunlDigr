@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.7.4"
+scriptVersion="0.7.5"
 
 # The URL of the script project is:
 # https://github.com/MohsenHNSJ/TunlDigr
@@ -11,10 +11,16 @@ scriptVersion="0.7.4"
 # If the script executes incorrectly, go to:
 # https://github.com/MohsenHNSJ/TunlDigr/issues
 
+# Color Table
+RED=$(tput setaf 160) # Error
+GREEN=$(tput setaf 34) # Success
+YELLOW=$(tput setaf 226) # Warning
+BLUE=$(tput setaf 39) # Information
+RESET=$(tput sgr0) # Reset
 
-# Generates a random variable and echos it back.
+# Generates a random variable and echoes it back.
 # <<<Options
-#   username: generate and return a random short ( 6 - 10 ) username
+#   user-name: generate and return a random short ( 6 - 10 ) user-name
 #   password: generate and return a random long ( 18 - 22 ) password
 generateRandom() {
     # We read the argument supplied to the function to determine which type of random variable to generate and echo back.
@@ -29,7 +35,7 @@ generateRandom() {
 	            } | sort -R | awk '{printf "%s",$1}')"
 			;;
         password)
-        	# We avoid adding symbols inside the password as it sometimes caused problems, therefore the password lenght is high.
+        	# We avoid adding symbols inside the password as it sometimes caused problems, therefore the password length is high.
         	choose() { echo ${1:RANDOM%${#1}:1} $RANDOM; }
 		        local randomVariable="$({ choose '123456789'
 		        choose 'abcdefghijklmnopqrstuvwxyz'
@@ -45,7 +51,7 @@ generateRandom() {
     }
 
 # Asks the user to select a tunneling method by entering a numeric value from 1 to 3.
-# Can be skipped by -tm and specifing a method in the argument.
+# Can be skipped by -tm and specifying a method in the argument.
 # Checks input for validity and if it's a valid, it will convert it to a string and save it in (tunnelingMethod) variable.
 # Current available tunnels: (1) Hysteria 2, (2) Reality, (3) ShadowSocks
 askTunnelingMethod() {
@@ -62,7 +68,7 @@ askTunnelingMethod() {
 	# We validate user input and show an error if it's invalid, then loop the process until the value is valid.
 	until [[ $tunnelingMethod == +([1-3]) ]]; do
 		echo
-		read -n 1 -p "Invalid input, please only input a number from 1 - 3: " tunnelingMethod
+		read -n 1 -p "${YELLOW}Invalid input: ${RESET}Please only input a number from 1 - 3: " tunnelingMethod
 	    done
     # We convert the input value from user, to a string for better code readability.
     case $tunnelingMethod in
@@ -112,10 +118,10 @@ showStartupMessage() {
 	echo "========================================================================="
 	echo "|                    TunlDigr by @MohsenHNSJ (Github)                   |"
 	echo "========================================================================="
-	echo "Check out the github page, contribute and suggest ideas/bugs/improvments."
+	echo "Check out the github page, contribute and suggest ideas/bugs/improvements."
 	echo
 	echo "=========================="
-	echo "| Script version $scriptVersion   |"
+	echo "| ${BLUE}Script version $scriptVersion   ${RESET}|"
 	echo "=========================="
     }
 
@@ -184,7 +190,7 @@ saveAndTransferCredentials() {
     if[ ! $tunnelingMethod == shadowsocks ]; then
 	    echo $latestPackageVersion > /tunlDigrTemp/tempLatestPackageVersion.txt
         fi
-	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the senstive information when it's no longer needed.
+	# We transfer ownership of the temp folder to the new user, so the new user is able to Access and delete the sensitive information when it's no longer needed.
 	sudo chown -R $newAccUsername /tunlDigrTemp/
     }
 
@@ -201,7 +207,7 @@ readAndRemoveCredentials() {
         tempLatestPackageVersion=$(</tunlDigrTemp/tempLatestPackageVersion.txt)
         sudo rm /tunlDigrTemp/tempLatestPackageVersion.txt
         fi
-	# We delete senstive inforamtion.
+	# We delete sensitive information.
 	sudo rm /tunlDigrTemp/tempNewAccUsername.txt
 	sudo rm /tunlDigrTemp/tempNewAccPassword.txt
     }
@@ -214,7 +220,7 @@ allowPortOnUfw() {
 	echo "========================================================================="
 	# We provide password to 'sudo' command and open protocol port.
     # We check whether user has provided custom port and if so, we check if it's in the acceptable range (0 - 65535).
-    # If not, we will use the dafault 443.
+    # If not, we will use the default 443.
     if [ ! -v tunnelPort ] || [[ $tunnelPort != +([0-9]) ]] || [ $tunnelPort -gt 65535 ]; then       
         tunnelPort=443
         fi
@@ -411,7 +417,7 @@ reloadScript() {
 
 # Shows an error message, then calls the reloadScript function.
 hardwareNotSupported() {
-    echo "This architecture is NOT Supported by $tunnelName"
+    echo "${RED}Error: ${RESET}This architecture is NOT Supported by $tunnelName"
     echo "Try selecting another tunnel"
     echo "the script will now return to tunnel selection menu in 5 seconds"
     # We will pause the script for 5 seconds and then reload the script
@@ -419,7 +425,7 @@ hardwareNotSupported() {
     reloadScript
     }
 
-# Checks whether the cpu architecture has VFP (Vector Floating Point accelerator) support or not.
+# Checks whether the CPU architecture has VFP (Vector Floating Point accelerator) support or not.
 # Returns:
 #   "Present"
 #   "Absent"
@@ -434,7 +440,7 @@ checkVfpSupport() {
     }
 
 # Gets the current machine's hardware architecture and translates it to appropriate string based on selected tunneling method.
-# If the tunnel does not supprt the current hardware architecture, an error message will be shown and the script will exit.
+# If the tunnel does not support the current hardware architecture, an error message will be shown and the script will exit.
 getHardwareArch() {
     # We check and save the hardware architecture of current machine.
 	local hwarch="$(uname -m)"
@@ -456,7 +462,7 @@ getHardwareArch() {
 	    'x86_64' | 'amd64')
             case $tunnelingMethod in
                 hysteria2)
-                    # We check if cpu supprt AVX.
+                    # We check if cpu support AVX.
 	                avxsupport="$(lscpu | grep -o avx)"
 	                if [ -z "$avxsupport" ]; then 
 		                hwarch="amd64"
@@ -491,7 +497,7 @@ getHardwareArch() {
                     ;;
                 xray)
                     # We check whether the cpu has Vector Floating Point (VFP) accelerator or not.
-                    # If cpu does not suppport it, we revert back to an older package, omitted from these instruction calls.
+                    # If cpu does not support it, we revert back to an older package, omitted from these instruction calls.
                     if [ checkVfpSupport == "Present" ]; then
                         hwarch="arm32-v6"
                     else
@@ -508,7 +514,7 @@ getHardwareArch() {
                     ;;
                 xray)
                     # We check whether the cpu has Vector Floating Point (VFP) accelerator or not.
-                    # If cpu does not suppport it, we revert back to an older package, omitted from these instruction calls.
+                    # If cpu does not support it, we revert back to an older package, omitted from these instruction calls.
                     if [ checkVfpSupport == "Present" ]; then
                         hwarch="arm32-v7a"
                     else
@@ -560,7 +566,12 @@ getHardwareArch() {
                     hardwareNotSupported
                     ;;
                 xray)
-                    hwarch="mips64"
+                    # We check whether the architecture byte order is little endian or not.
+                    if [ $(lscpu | grep -c "Little Endian") -gt 0 ]; then
+                        hwarch="mips64le"
+                    else
+                        hwarch="mips64"
+                        fi
                     ;;
                 esac
             ;;
@@ -614,7 +625,7 @@ getHardwareArch() {
             ;;
         # IBM System/390
         # Because there is no difference, we don't check anything here.
-        s390x)
+        's390x')
             hwarch="s390x"
             ;;
         # If nothing matched, either it's not implemented yet OR the tunnels don't support such architecture.
@@ -623,7 +634,7 @@ getHardwareArch() {
             hardwareNotSupported
             ;;
 	    esac
-    # We echo back the tranlated hardware architecture.
+    # We echo back the translated hardware architecture.
     echo $hwarch
     }
 
@@ -4980,7 +4991,7 @@ showConnectionInformation() {
     echo 
     echo "Write down the LOCAL USERNAME & LOCAL PASSWORD"
     echo "you may need it for updating later"
-    echo "Usage of country-based routing is highly advised!"
+    echo "${BLUE}Usage of country-based routing is highly advised!${RESET}"
     }
 
 # Shows the QR Code for easier access to the tunnel.
@@ -5002,11 +5013,11 @@ showQrCode() {
             local serverConfig="ss://$encodedSegment@$serverIp:$tunnelPort#$serverName"
             ;;
         esac  
-    # We output a qrcode to ease connection.
+    # We output a Qr Code to ease connection.
     qrencode -t ansiutf8 $serverConfig
     }
 
-# Checks the repository of the selected tunnel and echos back the latest release version of it.
+# Checks the repository of the selected tunnel and echoes back the latest release version of it.
 checkLatestVersion() {
     case $tunnelingMethod in
         hysteria2)
@@ -5018,6 +5029,12 @@ checkLatestVersion() {
         esac
     # We echo back the latest package version.
     echo "$(curl --silent $url | grep -Po "(?<=\"tag_name\": \").*(?=\")"  | sed 's/^.//' )"
+    }
+
+finishScript() {
+    echo "The script has finished!"
+    read -n 1 -s -r -p "Press any key to exit"
+    exit
     }
 
 # Main installation pipeline for tunnels.
@@ -5046,7 +5063,7 @@ installTunnel() {
 	    installPackages
         fi
     # If the selected tunnel is Hysteria 2 or Reality, we check and save the latest package version number.
-    # ShadowSocks uses (snap) to install and does not need to check a url.
+    # ShadowSocks uses (snap) to install and does not need to check a URL.
     case $tunnelingMethod in
         hysteria2 || reality)
             latestPackageVersion=$(checkLatestVersion)
@@ -5055,7 +5072,7 @@ installTunnel() {
             if [ -z $latestPackageVersion ]; then
                 echo "There is a problem while trying to get latest version of $tunnelName!"
                 echo "either:"
-                echo "1. You are offline"
+                echo "1. You are off-line"
                 echo "2. Access to github is blocked"
                 echo "3. repository is unavailable for some reason"
                 echo 
@@ -5111,6 +5128,8 @@ installTunnel() {
     if [ ! -v disableQrCode ]; then
         showQrCode
         fi
+    # At last we will show a message and exit the script.
+    finishScript
     }
 
 # <<< SCRIPT STARTS HERE >>>
@@ -5162,7 +5181,7 @@ while [ ! -z "$1" ]; do
 		-setuserpass)
 			newAccPassword=$2
 			;;
-        # Set custom port for protcols.
+        # Set custom port for protocols.
         -settunnelport)
             tunnelPort=$2
             ;;
