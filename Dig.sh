@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptVersion="0.7.6"
+scriptVersion="0.7.7"
 
 # The URL of the script project is:
 # https://github.com/MohsenHNSJ/TunlDigr
@@ -36,6 +36,21 @@ XRAY_ERROR_LOG_PATH=""
 
 # If set to 1, script should set XRAY_ERROR_LOG_PATH as (none).
 DISABLE_XRAY_ERROR_LOG=0
+
+# The log level for error logs, indicating the information that needs to be recorded.
+# The default value is "warning".
+# (0) "none": Do not record any content.
+# (1) "debug": Output information used for debugging the program. Includes all "info" content.
+# (2) "info": Runtime status information, etc., which does not affect normal use. Includes all "warning" content.
+# (3) "warning": Information output when there are some problems that do not affect normal operation but may affect user experience. Includes all "error" content.
+# (4) "error": Xray encountered a problem that cannot be run normally and needs to be resolved immediately.
+XRAY_LOG_LEVEL=3
+
+# Whether to enable DNS query logs, 
+# for example: DOH//doh.server got answer: domain.com -> [ip1, ip2] 2.333ms.
+# false
+# true
+XRAY_LOG_DNS=false
 
 # Generates a random variable and echoes it back.
 # <<<Options
@@ -2837,25 +2852,57 @@ writeXrayConfigFile() {
     # We store the path of the 'config.json' file.
     XRAY_CONFIG_FILE_PATH=/home/$tempNewAccUsername/xray/config.json
     # We initialize our parameters.
+    # Access log path
     if [ $DISABLE_XRAY_ACCESS_LOG == 1 ]; then
         # The special value (none) disables access logs.
         $XRAY_ACCESS_LOG_PATH='none'
         fi
+    # Error log path
     if [ $DISABLE_XRAY_ERROR_LOG == 1 ]; then
         # The special value (none) disables error logs.
         $XRAY_ERROR_LOG_PATH='none'
         fi
+    # Log level
+    case $XRAY_LOG_LEVEL in
+        0)
+            # Do not record any content.
+            XRAY_LOG_LEVEL="none"
+            ;;
+        1)
+            # Output information used for debugging the program. Includes all "info" content.
+            XRAY_LOG_LEVEL="debug"
+            ;;
+        2)
+            # Runtime status information, etc., which does not affect normal use. Includes all "warning" content.
+            XRAY_LOG_LEVEL="info"
+            ;;
+        3)
+            # Information output when there are some problems that do not affect normal operation but may affect user experience. Includes all "error" content.
+            XRAY_LOG_LEVEL="warning"
+            ;;
+        4)
+            # Xray encountered a problem that cannot be run normally and needs to be resolved immediately.
+            XRAY_LOG_LEVEL="error"
+            ;;
+        *)
+            # Invalid input from user, revert to default value (warning).
+            XRAY_LOG_LEVEL="warning"
+            ;;
+            esac
 
     # We start writing to config file with ( > ) to replace existing config parameters if present.
     sudo echo "{" > $XRAY_CONFIG_FILE_PATH
-
+    # log section
     cat >> $XRAY_CONFIG_FILE_PATH << 'END_OF_LOG_SECTION'
         "log":{
             "access":   "$XRAY_ACCESS_LOG_PATH",
             "error":    "$XRAY_ERROR_LOG_PATH",
-            "loglevel": "warning"
+            "loglevel": "$XRAY_LOG_LEVEL",
+            "dnsLog":   $XRAY_LOG_DNS
             },
 END_OF_LOG_SECTION
+    # 
+    
     
     # We finish the file by closing the curly brackets
     sudo echo "}" >> $XRAY_CONFIG_FILE_PATH
@@ -2890,8 +2937,8 @@ configureXray() {
         fi
     # We restart the service and enable auto-start.
     sudo systemctl daemon-reload && sudo systemctl enable xray
-
-
+    # Write configuration parameters into config.json file
+    writeXrayConfigFile
 
 
     cat > $XRAY_CONFIG_FILE_PATH << EOL
@@ -5262,19 +5309,27 @@ while [ ! -z "$1" ]; do
             ;;
         # Set custom path for access log file.
         -setxracslgpath)
-            $XRAY_ACCESS_LOG_PATH=$2
+            XRAY_ACCESS_LOG_PATH=$2
             ;;
         # Disables writing access logs.
         -dxracslg)
-            $DISABLE_XRAY_ACCESS_LOG=1
+            DISABLE_XRAY_ACCESS_LOG=1
             ;;
         # Set custom path for error log file.
         -setxrerrlgpath)
-            $XRAY_ERROR_LOG_PATH=$2
+            XRAY_ERROR_LOG_PATH=$2
             ;;
         # Disables writing error logs.
         -dxrerrlg)
-            $DISABLE_XRAY_ERROR_LOG=1
+            DISABLE_XRAY_ERROR_LOG=1
+            ;;
+        # Set log level, acceptable range 0 - 4.
+        -xrlogl)
+            XRAY_LOG_LEVEL=$2
+            ;;        
+        # Enable logging DNS queries
+        -xrlogdns)
+            XRAY_LOG_DNS=true
             ;;
         # ShadowSocks
         # Forces snap to use edge channel for shadowsocks-libev package.

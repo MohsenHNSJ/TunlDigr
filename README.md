@@ -133,6 +133,23 @@ When this item is not specified or is an empty value, the log is output to stdou
 ### `-dxrerrlg` (disable writing error log):  
 Disables writing error logs.  
 
+### `-xrlogl` (set xray log level):  
+The log level for error logs, indicating the information that needs to be recorded.  
+Acceptable range `0 - 4`.  
+The default value is "warning" `3`.  
+`0` "none": Do not record any content.  
+`1` "debug": Output information used for debugging the program. Includes all "info" content.  
+`2` "info": Runtime status information, etc., which does not affect normal use. Includes all "warning" content.  
+`3` "warning": Information output when there are some problems that do not affect normal operation but may affect user experience. Includes all "error" content.  
+`4` "error": Xray encountered a problem that cannot be run normally and needs to be resolved immediately.    
+If input is invalid, the script will revert back to default value.  
+
+### `-xrlogdns` (enable logging DNS queries):  
+Whether to enable DNS query logs.  
+For example: DOH//doh.server got answer: domain.com -> [ip1, ip2] 2.333ms.  
+Default disabled.  
+
+
 ---
 
 ## ShadowSocks Arguments  
